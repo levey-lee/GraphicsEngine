@@ -1,0 +1,1 @@
+For now it only compiles using VS2017.
