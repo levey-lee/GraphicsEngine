@@ -1,6 +1,6 @@
 #pragma once
 #include "core/ComponentPool.h"
-#include "core/BoundingSphere.h"
+#include "core/BoundingVolume.h"
 #include "graphics/ShaderManager.h"
 
 class ComponentEditorInterface;

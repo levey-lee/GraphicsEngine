@@ -229,6 +229,7 @@ namespace Graphics
         mesh->centerMesh();
         mesh->normalizeVertices();
         mesh->CalculateBoundingSphere();
+        mesh->CalcTanBitan();
         mesh->SetLabel(meshLabel);
         Assert(m_meshes.find(meshLabel) == m_meshes.end(), "Mesh with label \"%s\" already exists.", meshLabel.c_str());
         m_meshListMutex.lock();

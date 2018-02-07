@@ -7,3 +7,5 @@
 CS300_Framework/premake/projects/obj/
 *.pdb
 *.ilk
+DiamondGraphicsEngine/premake/projects/
+DiamondGraphicsEngine/bin/

@@ -160,9 +160,9 @@ namespace Component
         Math::Matrix3 rotMatX;
         Math::Matrix3 rotMatY;
         Math::Matrix3 rotMatZ;
-        rotMatX.Rotate(Math::Vector3::cXAxis, m_rotation.x + m_transform.GetRotationEular().x);
-        rotMatY.Rotate(Math::Vector3::cYAxis, m_rotation.y + m_transform.GetRotationEular().y);
-        rotMatZ.Rotate(Math::Vector3::cZAxis, m_rotation.z + m_transform.GetRotationEular().z);
+        rotMatX.Rotate(Math::Vector3::cXAxis, m_rotation.x + m_transform.GetRotationEuler().x);
+        rotMatY.Rotate(Math::Vector3::cYAxis, m_rotation.y + m_transform.GetRotationEuler().y);
+        rotMatZ.Rotate(Math::Vector3::cZAxis, m_rotation.z + m_transform.GetRotationEuler().z);
 
         Math::Matrix3 rotMat = rotMatZ* rotMatY*rotMatX;
 
@@ -180,9 +180,9 @@ namespace Component
         Math::Matrix3 rotMatX;
         Math::Matrix3 rotMatY;
         Math::Matrix3 rotMatZ;
-        rotMatX.Rotate(Math::Vector3::cXAxis, m_rotation.x + m_transform.GetRotationEular().x);
-        rotMatY.Rotate(Math::Vector3::cYAxis, m_rotation.y + m_transform.GetRotationEular().y);
-        rotMatZ.Rotate(Math::Vector3::cZAxis, m_rotation.z + m_transform.GetRotationEular().z);
+        rotMatX.Rotate(Math::Vector3::cXAxis, m_rotation.x + m_transform.GetRotationEuler().x);
+        rotMatY.Rotate(Math::Vector3::cYAxis, m_rotation.y + m_transform.GetRotationEuler().y);
+        rotMatZ.Rotate(Math::Vector3::cZAxis, m_rotation.z + m_transform.GetRotationEuler().z);
 
         Math::Matrix3 rotMat = rotMatZ* rotMatY*rotMatX;
 
@@ -192,14 +192,49 @@ namespace Component
             Math::Vector3(1, 1, 1)
         );
 
-        Math::Vector4 viewVec = Math::Vector4(0,0,-1, 0);
+        Math::Vector4 viewVec = Math::Vector4(DefaultViewDirection.x, DefaultViewDirection.y, DefaultViewDirection.z, 0);
         viewVec = Math::Transform(viewMat, viewVec);
         SetViewVector(Math::Vector3(viewVec.x, viewVec.y, viewVec.z));
+        return GetViewVector();
+    }
+
+    Math::Vector3 const& Camera::CalcUpVector()
+    {
+        Math::Matrix4 viewMat;
+        Math::Matrix3 rotMatX;
+        Math::Matrix3 rotMatY;
+        Math::Matrix3 rotMatZ;
+        rotMatX.Rotate(Math::Vector3::cXAxis, m_rotation.x + m_transform.GetRotationEuler().x);
+        rotMatY.Rotate(Math::Vector3::cYAxis, m_rotation.y + m_transform.GetRotationEuler().y);
+        rotMatZ.Rotate(Math::Vector3::cZAxis, m_rotation.z + m_transform.GetRotationEuler().z);
+
+        Math::Matrix3 rotMat = rotMatZ* rotMatY*rotMatX;
+
+        viewMat.BuildTransform(
+            m_position + m_transform.GetPosition(),
+            rotMat,
+            Math::Vector3(1, 1, 1)
+        );
+
+        Math::Vector4 upVec = Math::Vector4(DefaultUpDirection.x, DefaultUpDirection.y, DefaultUpDirection.z, 0);
+        upVec = Math::Transform(viewMat, upVec);
+        SetUpVector(Math::Vector3(upVec.x, upVec.y, upVec.z));
         return GetViewVector();
     }
 
     Math::Vector3 Camera::GetCameraWorldPosition() 
     {
         return m_position + m_transform.GetPosition();
+    }
+
+    Math::Vector3 Camera::GetCameraWorldRotationEuler()
+    {
+        return m_rotation + m_transform.GetRotationEuler();
+    }
+
+    void Camera::RotateCameraLocal(Math::Vector3 const& xyzRad)
+    {
+        m_rotation += xyzRad;
+        OnCameraTransformChanged();
     }
 }

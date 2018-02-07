@@ -24,7 +24,7 @@ namespace TwCallBack
     void TW_CALL GetRotation(void *value, void *clientData)
     {
         Component::Transform* transform = static_cast<Component::Transform*>(clientData);
-        Math::Vector3 rotRad = transform->GetRotationEular();
+        Math::Vector3 rotRad = transform->GetRotationEuler();
         Math::Vector3 rotDeg = { Math::RadToDeg(rotRad.x),Math::RadToDeg(rotRad.y) ,Math::RadToDeg(rotRad.z) };
         *static_cast<Math::Vector3*>(value) = rotDeg;
     }
@@ -54,27 +54,12 @@ void Component::Transform::SetShaderParams(std::shared_ptr<Graphics::ShaderProgr
     Graphics::GraphicsEngine* graphics)
 {
     std::shared_ptr<Graphics::ShaderManager> shaderManager = graphics->GetShaderManager();
-    //TODO(Assignment 1): Set transform to shader
     ////////////////////////////////////////////////////////////////////////////
     //  set transform
-#if SAMPLE_IMPLEMENTATION
     Math::Matrix4 const& modelMatrix = GetWorldTransform();
     Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
     shader->SetUniform("ModelMatrix", modelMatrix);
     shader->SetUniform("ModelViewProjectionMatrix", mvp);
-#else
-    Math::Matrix4 sampleModelMatrix = Math::Matrix4::c_Identity;
-    Math::Matrix4 sampleMvpMatrix = Math::Matrix4::c_Identity;
-    sampleModelMatrix[2][3] = -2;//Hardcode position.z so you can see the model;
-    sampleMvpMatrix.array[0] = 2.41421342f;
-    sampleMvpMatrix.array[5] = 4.29193497f;
-    sampleMvpMatrix.array[10] = -1.00200200f;
-    sampleMvpMatrix.array[11] = 1.80380380f;
-    sampleMvpMatrix.array[14] = -1.00000000f;
-    sampleMvpMatrix.array[15] = 2.00000000f;
-    shader->SetUniform("ModelMatrix", sampleModelMatrix);
-    shader->SetUniform("ModelViewProjectionMatrix", sampleMvpMatrix);
-#endif
 }
 
 Component::Transform& Component::Transform::Translate(Math::Vector3 const& trans)
@@ -183,7 +168,7 @@ void Component::Transform::Reflect(TwBar* editor, std::string const& /*barName*/
     std::string defStr = "group="+ groupName;
 
     TwAddVarCB(editor, "Position", TW_TYPE_POINT(3), TwCallBack::SetPosition, TwCallBack::GetPosition, this, defStr.c_str());
-    TwAddVarCB(editor, "Rotation Euler", TW_TYPE_POINT(3, 0.01f, "X degree", "Y degree", "Z degree"), TwCallBack::SetRotation, TwCallBack::GetRotation, this, (defStr + " help='degree'").c_str());
+    TwAddVarCB(editor, "Rotation Euler", TW_TYPE_POINT(3, 0.05f, "X degree", "Y degree", "Z degree"), TwCallBack::SetRotation, TwCallBack::GetRotation, this, (defStr + " help='degree'").c_str());
 
     TwAddVarCB(editor, "Scale", TW_TYPE_POINT(3), TwCallBack::SetScale, TwCallBack::GetScale, this, (defStr).c_str());
 }
@@ -201,16 +186,7 @@ void Component::Transform::SetWorldTransform(Math::Matrix4 const& worldTrans)
 
 Math::Matrix4 Component::Transform::CalcLocalTransform()
 {
-    //TODO(Assignment 1): Implement this function
-    //Local transform is used to transform an object to world if the object does not have a
-    //parent object. You don't need to worry about the world transformation for child objects
-    //since it's handled by the framework in a hirarchical manner. You are very welcome to 
-    //take a look at how world transform system works in Scene.h and HierarchicalObjectHandler.h
 
-    //For the purpose of the first assignment, you only need to calculate the Euler rotation matrix
-    //then call a function Math::Matrix4::BuildTransform() to build transform.
-
-#if SAMPLE_IMPLEMENTATION
     Math::Matrix3 rotMatX;
     Math::Matrix3 rotMatY;
     Math::Matrix3 rotMatZ;
@@ -225,10 +201,6 @@ Math::Matrix4 Component::Transform::CalcLocalTransform()
         rotMat,
         m_scale
     );
-#else
-    m_localTransform.SetIdentity();    
-    m_localTransform[2][3] = -2;//Hardcode position.z so you can see the model
-#endif // SAMPLE_IMPLEMENTATION
     return m_localTransform;
 }
 

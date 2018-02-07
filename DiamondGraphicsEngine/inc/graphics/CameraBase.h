@@ -20,6 +20,10 @@ namespace Graphics
         virtual Math::Vector3 const& GetViewVector() const { return m_viewVec; }
         virtual void SetViewVector(Math::Vector3 const& viewVec);
 
+        virtual Math::Vector3 const& GetUpVector() const { return m_upVec; }
+        virtual Math::Vector3 const& CalcUpVector();
+        virtual void SetUpVector(Math::Vector3 const& upVec);
+
         virtual Math::Matrix4 const& GetViewMatrix() { return m_viewMatrix; }
         virtual Math::Matrix4 const& GetProjMatrix() { return m_projMatrix; }
         virtual Math::Matrix4 const& GetViewProjMatrix() { return m_viewProjMatrix; }
@@ -56,9 +60,13 @@ namespace Graphics
 
         virtual Math::Vector3 GetCameraLocalPosition() { return {}; }
         virtual Math::Vector3 GetCameraWorldPosition() { return {}; }
+        virtual Math::Vector3 GetCameraLocalRotationEuler() { return {}; }
+        virtual Math::Vector3 GetCameraWorldRotationEuler() { return {}; }
+        virtual void RotateCameraLocal(Math::Vector3 const& xyzRad) {}
 
         static CameraBase DefaultCamera;
         static const Math::Vector3 DefaultViewDirection;
+        static const Math::Vector3 DefaultUpDirection;
 
     protected:
 
@@ -69,10 +77,11 @@ namespace Graphics
         float m_fieldOfView = Math::c_Pi/3.0f;
         float m_width = 160.0f;
         float m_height = 90.0f;
-        float m_nearPlaneDist = 0.1f;
+        float m_nearPlaneDist = 1.0f;
         float m_farPlaneDist = 1000.0f;
 
         Math::Vector3 m_viewVec = DefaultViewDirection;
+        Math::Vector3 m_upVec = DefaultUpDirection;
         Math::Matrix4 m_viewMatrix;
         Math::Matrix4 m_projMatrix;
         Math::Matrix4 m_viewProjMatrix;

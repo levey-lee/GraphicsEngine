@@ -30,13 +30,7 @@ namespace Graphics
 
     void TriangleMesh::Build()
     {
-        //TODO(Assignment 1): Build VAO, VBO, IBO for the mesh so that OpenGL will know how
-        //to render this geometry
-        // Construct a new VAO using each of the triangles and vertices stored
-        // within this TriangleMesh; this is done in a less efficient way possible.
-        // A simple memcpy could actually be used to copy data from the mesh
-        // directly into the IBO and VBO.
-#if SAMPLE_IMPLEMENTATION
+
         VertexArrayObject* array = new VertexArrayObject(m_vertices.size(), m_triangles.size(), sizeof(Vertex), Topology::TRIANGLES);
         VertexBufferObject& vbo = array->GetVertexBufferObject();
         IndexBufferObject& ibo = array->GetIndexBufferObject();
@@ -57,16 +51,6 @@ namespace Graphics
 
         // wrap the VAO into a shared_ptr and save it locally to be rendered
         m_vertexArrayObject = std::shared_ptr<VertexArrayObject>(array);
-#else
-        // Step 0: Remove these two lines
-        m_vertexArrayObject = std::make_shared<VertexArrayObject>(3, 1, 32U, (Topology)3);
-        m_vertexArrayObject->BuildForSampleTriangle(this);
-        // Step 1: allcate a new VAO
-        // Step 2: add all of the vertices to the VBO
-        // Step 3: add all indices (per triangle) to the IBO
-        // Step 4: upload the contents of the VBO and IBO to the GPU and build the VAO
-        // Step 5: wrap the VAO into a shared_ptr and save it locally to be rendered        
-#endif // SAMPLE_IMPLEMENTATION
 
         m_isBuilt = true;
     }
@@ -78,11 +62,6 @@ namespace Graphics
         centerMesh();
         normalizeVertices();
         CalculateBoundingSphere();
-        //TODO(Assignment 1): Calculate all the information a vertex needs
-        //You should firstly calculate face normal and store them in m_triangleNormals
-        //then you average adjacent face normals to get vertex normal then store it in 
-        //each corresponding vertex.
-#if SAMPLE_IMPLEMENTATION
 
         std::vector<std::vector<unsigned> > adjList;
         adjList.resize(this->GetVertexCount());
@@ -124,7 +103,6 @@ namespace Graphics
             }
             m_vertices[i].normal = sum.Normalized();
         }
-#endif // SAMPLE_IMPLEMENTATION
 
         for (auto& i : m_triangleNormals)
         {
@@ -396,8 +374,6 @@ namespace Graphics
 
     TriangleMesh* TriangleMesh::CalcTanBitan()
     {
-#if SAMPLE_IMPLEMENTATION
-
         //calculate face tangent and bitangent
         for (auto& i : m_triangles)
         {
@@ -466,9 +442,6 @@ namespace Graphics
            m_vertices[ tans[i].first ].tangent /= static_cast<float>(tans[i].second);
            m_vertices[bitans[i].first].bitangent /= static_cast<float>(bitans[i].second);
         }
-#endif // SAMPLE_IMPLEMENTATION
-
-
         return this;
     }
 }

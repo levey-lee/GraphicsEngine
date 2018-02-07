@@ -2,7 +2,7 @@
 #include "framework/Utilities.h"
 #include "math/Vector3.h"
 #include "graphics/VertexArrayObject.h"
-#include "core/BoundingSphere.h"
+#include "core/BoundingVolume.h"
 #include "core/HierarchicalObjectHandler.h"
 
 namespace Graphics

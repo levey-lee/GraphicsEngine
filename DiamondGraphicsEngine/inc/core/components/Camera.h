@@ -34,8 +34,12 @@ namespace Component
         /// Camera methods
         void CalcViewMatrix() override;
         Math::Vector3 const& CalcViewVector() override;
+        Math::Vector3 const& CalcUpVector() override;
         Math::Vector3 GetCameraLocalPosition() override { return m_position; }
         Math::Vector3 GetCameraWorldPosition() override;
+        Math::Vector3 GetCameraLocalRotationEuler() override { return m_rotation; }
+        Math::Vector3 GetCameraWorldRotationEuler() override;
+        void RotateCameraLocal(Math::Vector3 const& xyzRad)override;
 
 		//////////////////////////////////////////////////
 		/// Editor

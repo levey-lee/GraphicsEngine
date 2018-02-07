@@ -211,6 +211,7 @@ namespace Graphics
     {
         m_diffuseTexture.first = type;
         m_diffuseTexture.second = texture;
+        m_isDiffuseTextureEnabled = true;
         return *this;
     }
 
@@ -218,6 +219,7 @@ namespace Graphics
     {
         m_normalMapTexture.first = type;
         m_normalMapTexture.second = texture;
+        m_isNormalMapTextureEnabled = true;
         return *this;
     }
 
@@ -243,6 +245,7 @@ namespace Graphics
     {
         m_normalMapTexture.first = type;
         m_specularTexture.second = texture;
+        m_isSpecularTextureEnabled = true;
         return *this;
     }
 

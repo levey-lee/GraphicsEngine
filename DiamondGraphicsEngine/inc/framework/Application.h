@@ -23,7 +23,7 @@ public:
     using OnSpecialKeyDown = void(*)(Application* application, int key, int x, int y);
     using OnSpecialKeyUp = void(*)(Application* application, int key, int x, int y);
     using OnMouseButtonDownCallBack = void(*)(Application* application, int button, int x, int y);
-    using OnMouseButtonDownCallBack = void(*)(Application* application, int button, int x, int y);
+    using OnMouseButtonUpCallBack = void(*)(Application* application, int button, int x, int y);
     using OnMouseWheelCallBack = void(*)(Application* application, int wheel, int direction, int x, int y);
     using OnMouseDragCallBack = void(*)(Application* application, int x, int y);
 
@@ -65,6 +65,9 @@ public:
     void SetOnViewportChanged(ViewportChangedCallBack func) { m_viewportCallback = func; }
     void SetMouseWheelCallback(OnMouseWheelCallBack func) { m_mouseViewCallback = func; }
     void SetMouseButtonDownCallback(OnMouseButtonDownCallBack func) { m_mouseButtonDownCallBack = func; }
+    void SetKeyDownCallback(OnKeyDownCallBack func) { m_keyDownCallBack = func; }
+    void SetMouseButtonUpCallback(OnMouseButtonUpCallBack func) { m_mouseButtonUpCallBack = func; }
+    void SetMouseDragCallback(OnMouseDragCallBack func) { m_mouseButtonDragCallBack = func; }
     //TODO: add more functions like above, if you wish to handle more events
 
     struct ApplicationWrapper;
@@ -81,6 +84,15 @@ private:
     ViewportChangedCallBack m_viewportCallback = nullptr;
     OnMouseWheelCallBack m_mouseViewCallback = nullptr;
     OnMouseButtonDownCallBack m_mouseButtonDownCallBack = nullptr;
+    OnKeyDownCallBack m_keyDownCallBack = nullptr;
+    OnMouseButtonUpCallBack m_mouseButtonUpCallBack = nullptr;
+    OnMouseDragCallBack m_mouseButtonDragCallBack = nullptr;
+
+
+
+
+
+
 };
 
 

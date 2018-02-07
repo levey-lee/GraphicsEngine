@@ -21,17 +21,14 @@ namespace Graphics
         //TODO(Assignemtn 1): Remove everything below, in this function. Since material will be loaded, not hardcoded
         ////////////////////////////////////////////////////////////////////////////
         //      Texture
-        //sun
-        std::shared_ptr<Material> sunMat = std::shared_ptr<Material>(new Material);
-        sunMat->SetAmbientColor(Color(0.5f, 0.1f, 0.1f));
-        sunMat->SetIlluminationModel(1);
-        sunMat->SetIfReceiveLight(false);
-        emplaceMaterial("Sun", sunMat);
-
-#if SAMPLE_IMPLEMENTATION
-        //sun
-        sunMat->SetDiffuseColor(Color(1, 1, 1));
-        sunMat->SetEmissiverColor(Color(1, 1, 1));
+        //BTR80A
+        std::shared_ptr<Material> btr80AMat = std::shared_ptr<Material>(new Material);
+        btr80AMat->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
+        btr80AMat->SetIlluminationModel(2);
+        btr80AMat->SetDiffuseColor(Color(1, 1, 1));
+        btr80AMat->SetEmissiverColor(Color(0, 0, 0));
+        emplaceMaterial("BTR80A", btr80AMat);
+               
 
 
         //skybox
@@ -43,99 +40,39 @@ namespace Graphics
         skyboxMat->SetSpecularColor(Color(0,0,0));
         emplaceMaterial("Skydome", skyboxMat);
 
-        ////////////////////////////////////////////////////////////////////////////
-        //      Hardcode materials
-        //earth
-        std::shared_ptr<Material> earthMat = std::shared_ptr<Material>(new Material);
-        earthMat->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
-        earthMat->SetDiffuseColor(Color(1, 1, 1));
-        emplaceMaterial("Earth", earthMat);
-
-
-        //moon
-        std::shared_ptr<Material> moonMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Moon", moonMat);
-
-        //mars
-        std::shared_ptr<Material> marsMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Mars", marsMat);
-
-        //jupiter
-        std::shared_ptr<Material> jupiterMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Jupiter", jupiterMat);
-
-        //mercury
-        std::shared_ptr<Material> mercuryMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Mercury", mercuryMat);
-
-        //neptune
-        std::shared_ptr<Material> neptuneMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Neptune", neptuneMat);
-
-        //saturn
-        std::shared_ptr<Material> saturnMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Saturn", saturnMat);
-
-        //uranus
-        std::shared_ptr<Material> uranusMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Uranus", uranusMat);
-
-        //venus
-        std::shared_ptr<Material> venusMat = std::make_shared<Material>(*earthMat);
-        emplaceMaterial("Venus", venusMat);
-
         //plane
-        std::shared_ptr<Material> planeMesh = std::make_shared<Material>(*earthMat);
+        std::shared_ptr<Material> planeMesh = std::make_shared<Material>(*btr80AMat);
         emplaceMaterial("Plane", planeMesh);
 
 
         std::shared_ptr<TextureManager> textureManager = g->GetTextureManager();
 
-        std::string skyboxTex = "SolarSystem/Warehouse-with-lights.jpg";
-        std::string earthTexWithClouds = "SolarSystem/8k/earth_daymap_with_clouds.jpg";
-        std::string earthNormalMap = "SolarSystem/8k/earth_normal_map.jpg";
-        std::string earthClouds = "SolarSystem/2k_earth_clouds.jpg";
-        std::string moonTex = "SolarSystem/8k/moon.jpg";
-        std::string marsTex = "SolarSystem/2k_mars.jpg";
-        std::string jupiterTex = "SolarSystem/2k_jupiter.jpg";
-        std::string mercuryTex = "SolarSystem/2k_mercury.jpg";
-        std::string neptuneTex = "SolarSystem/2k_neptune.jpg";
-        std::string saturnTex = "SolarSystem/2k_saturn.jpg";
-        std::string uranusTex = "SolarSystem/2k_uranus.jpg";
-        std::string venusTex = "SolarSystem/2k_venus.jpg";
-        std::string sunTex = "SolarSystem/2k_sun.jpg";
-
+        std::string wareHouseHDR = "Warehouse-with-lights.jpg";
+        std::string groundHDR = "GroudHDR.jpg";
+        std::string grassGroudHDR = "hdrmaps_com_free_060_Bg.jpg";
+        std::string metalRoof = "metal_roof_diff_512x512.jpg";
+        std::string btrDiffuse = "BTR80A/DF_4k_btr80a02.jpg";
+        std::string btrNormalMap = "BTR80A/btr_base_n.jpg";
         std::map<std::string, std::shared_ptr<Texture> > & textures = textureManager->GetTextureMap();
         textureManager->LoadTextureMultiThreadRealTime(
         {
-            { skyboxTex             },
-            { earthTexWithClouds    },
-            { earthNormalMap        },
-            { earthClouds           },
-            { moonTex               },
-            { marsTex               },
-            { jupiterTex            },
-            { mercuryTex            },
-            { neptuneTex            },
-            { saturnTex             },
-            { uranusTex             },
-            { venusTex              },
-            { sunTex                },
+            { wareHouseHDR },
+            { groundHDR },
+            { grassGroudHDR },
+            { metalRoof },
+            { btrDiffuse },
+            { btrNormalMap },
         });
+        //btr80A
+        btr80AMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(btrDiffuse));
+        btr80AMat->AssignNormalMapTexture(TextureType::NormalMapTexture_0, textures.at(btrNormalMap));
 
-        sunMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(sunTex));
-        skyboxMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(skyboxTex));
-        earthMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(earthTexWithClouds));
-        moonMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(moonTex));
-        marsMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(marsTex));
-        jupiterMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(jupiterTex));
-        mercuryMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(mercuryTex));
-        neptuneMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(neptuneTex));
-        saturnMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(saturnTex));
-        uranusMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(uranusTex));
-        venusMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(venusTex));
+        //skybox
+        skyboxMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(grassGroudHDR));
 
-#endif // 0
+        //plane
+        //planeMesh->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(metalRoof));
+
     }
 
     std::shared_ptr<Material> MaterialManager::AddMaterial(std::shared_ptr<Material> material)

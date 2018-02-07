@@ -233,9 +233,16 @@ void Application::ApplicationWrapper::OnApplicationStartup(int)
 
 void Application::ApplicationWrapper::OnKeyDown(unsigned char key, int x, int y)
 {
-	TwEventKeyboardGLUT(key, x, y);
-    if (key == 0x1B)//escape key
-        GetInstance().Close();
+    if (TwEventKeyboardGLUT(key, x, y) == 0)
+    {
+        if (key == 0x1B)//escape key
+            GetInstance().Close();
+
+        if (GetInstance().m_keyDownCallBack)
+        {
+            GetInstance().m_keyDownCallBack(&GetInstance(), key, x, y);
+        }
+    }
 }
 
 void Application::ApplicationWrapper::OnKeyUp(unsigned char /*key*/, int, int)
@@ -263,8 +270,13 @@ void Application::ApplicationWrapper::OnMouseButtonDown(int button, int x, int y
         GetInstance().m_mouseButtonDownCallBack(&GetInstance(), button, x, y);
     }
 }
-void Application::ApplicationWrapper::OnMouseButtonUp(int /*button*/, int , int )
+void Application::ApplicationWrapper::OnMouseButtonUp(int button, int x, int y)
 {
+    Application* app = &GetInstance();
+    if (app->m_mouseButtonUpCallBack)
+    {
+        app->m_mouseButtonUpCallBack(app, button, x, y);
+    }
 }
 
 void Application::ApplicationWrapper::OnMouseWheel(int wheel, int direction, int x, int y)
@@ -283,7 +295,15 @@ void Application::ApplicationWrapper::OnMouseWheel(int wheel, int direction, int
 
 void Application::ApplicationWrapper::OnMouseDrag(int x, int y)
 {
-	TwEventMouseMotionGLUT(x,y);
+	if(TwEventMouseMotionGLUT(x,y) == 0)
+	{
+        Application* app = &GetInstance();
+        if (app->m_mouseButtonDragCallBack)
+        {
+            app->m_mouseButtonDragCallBack(app, x, y);
+        }
+	}
+
 }
 
 void Application::ApplicationWrapper::OnIdle()

@@ -11,6 +11,7 @@ namespace Graphics
      *******************************************************/
     CameraBase CameraBase::DefaultCamera;
     const Math::Vector3 CameraBase::DefaultViewDirection = {0,0,-1};
+    const Math::Vector3 CameraBase::DefaultUpDirection = {0,1,0};
     CameraBase::CameraBase()
     {
         *this = DefaultCamera;
@@ -25,6 +26,17 @@ namespace Graphics
     void CameraBase::SetViewVector(Math::Vector3 const& viewVec)
     {
         m_viewVec = viewVec;
+    }
+
+    Math::Vector3 const& CameraBase::CalcUpVector()
+    {
+        m_upVec = { 0,1,0 };
+        return m_upVec;
+    }
+
+    void CameraBase::SetUpVector(Math::Vector3 const& upVec)
+    {
+        m_upVec = upVec;
     }
 
     void CameraBase::SetCameraUniforms(std::shared_ptr<ShaderProgram> shader)
@@ -110,6 +122,7 @@ namespace Graphics
         CalcViewMatrix();
         CalcViewProjMatrix();
         CalcViewVector();
+        CalcUpVector();
     }
 
     void CameraBase::OnCameraViewportChanged()
@@ -117,6 +130,7 @@ namespace Graphics
         CalcProjMatrix();
         CalcViewProjMatrix();
         CalcViewVector();
+        CalcUpVector();
     }
 }
 

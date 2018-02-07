@@ -108,7 +108,7 @@ namespace Graphics
 
         bool m_ifReceiveLight = true;
 
-        bool m_isDiffuseTextureEnabled = true;
+        bool m_isDiffuseTextureEnabled = false;
         bool m_isSpecularTextureEnabled = false;
         bool m_isNormalMapTextureEnabled = false;
 

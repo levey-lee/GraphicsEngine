@@ -1,5 +1,5 @@
 
-local assignmentTitle = "Assignment1"
+local assignmentTitle = "DiamondGraphicsEngine"
 
 if _ACTION == "clean" then
   os.rmdir("../bin")
@@ -7,17 +7,17 @@ if _ACTION == "clean" then
   os.rmdir("./ipch")
   os.rmdir(".vs")
   os.rmdir("Debug")
-  os.remove("CS300.sln")
-  os.remove("CS300.sdf")
-  os.remove("CS300.suo")
-  os.remove("CS300.v11.suo")
-  os.remove("CS300.v12.suo")
+  os.remove("DiamondGraphicsEngine.sln")
+  os.remove("DiamondGraphicsEngine.sdf")
+  os.remove("DiamondGraphicsEngine.suo")
+  os.remove("DiamondGraphicsEngine.v11.suo")
+  os.remove("DiamondGraphicsEngine.v12.suo")
   os.remove("*.DB")
   os.exit()
 end
 
-solution "CS300"
-  configurations { "Debug", "ReleaseSymbols", "Release" }
+solution "DiamondGraphicsEngine"
+  configurations { "Debug", "Release" }
   project(assignmentTitle)
     targetname(assignmentTitle:lower())
     kind "ConsoleApp"
@@ -38,17 +38,6 @@ solution "CS300"
         "copy ..\\..\\dep\\GLEW\\glew32.dll ..\\..\\bin\\debug\\",
         "copy ..\\..\\dep\\AntTweakBar\\AntTweakBar.dll ..\\..\\bin\\debug\\",
         "copy ..\\..\\dep\\FreeGLUT\\freeglut.dll ..\\..\\bin\\debug\\" }
-    configuration "ReleaseSymbols"
-      targetdir "../bin/release"
-      defines { "NDEBUG", "ASSET_PATH=\"../../assets/\"" }
-      optimize "On"
-      symbols "On"
-      links {"AntTweakBar"}
-      linkoptions { "/LTCG" } -- allows whole-program optimization
-      postbuildcommands {
-        "copy ..\\..\\dep\\GLEW\\glew32.dll ..\\..\\bin\\release\\",
-        "copy ..\\..\\dep\\AntTweakBar\\AntTweakBar.dll ..\\..\\bin\\release\\",
-        "copy ..\\..\\dep\\FreeGLUT\\freeglut.dll ..\\..\\bin\\release\\" }
     configuration "Release"
       targetdir "../bin/release"
       defines { "NDEBUG", "ASSET_PATH=\"../../assets/\"" }

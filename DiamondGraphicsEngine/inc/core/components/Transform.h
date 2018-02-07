@@ -30,7 +30,7 @@ namespace Component
         Transform& Orbit(Math::Vector3 const& axis, float angleRadian);
 
         Math::Vector3 const& GetPosition() const { return m_position; }
-        Math::Vector3 const& GetRotationEular() const { return m_rotationEuler; }
+        Math::Vector3 const& GetRotationEuler() const { return m_rotationEuler; }
         Math::Vector3 const& GetScale() const { return m_scale; }
 
         Math::Matrix4 const& GetLocalTransform() const;
