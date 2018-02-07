@@ -1,0 +1,9 @@
+*.db
+*.opendb
+*.ipch
+*.lastbuildstate
+*.tlog
+*.idb
+CS300_Framework/premake/projects/obj/
+*.pdb
+*.ilk

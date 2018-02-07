@@ -3,6 +3,8 @@
 #include "core/BoundingSphere.h"
 #include "graphics/ShaderManager.h"
 
+class ComponentEditorInterface;
+
 namespace Graphics {
     enum class ShaderType;
     class GraphicsEngine;
@@ -91,7 +93,7 @@ protected:
     virtual void OnDeactive();
 
 	std::string m_name;
-	std::vector<ComponentInterface*> m_editorComponents;
+	std::vector<ComponentEditorInterface*> m_editorComponents;
 
     //container of components that are specified 'Shaded'
     RenderObject m_shadedComponents;

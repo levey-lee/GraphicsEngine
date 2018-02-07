@@ -9,7 +9,7 @@ struct Application::ApplicationWrapper
 {
     static void OnApplicationStartup(int);
     static void OnInitialize();
-    static void OnCleanup();
+    static void OnClose();
     static void OnIdle();
     static void OnDraw();
     static void OnWindowResize(int width, int height);
@@ -81,6 +81,7 @@ void Application::Run(InitClientCallBack initCallback,
 	glutMotionFunc(ApplicationWrapper::OnMouseDrag);
 	glutPassiveMotionFunc(ApplicationWrapper::OnMousePassiveMotion);
 	glutIdleFunc(ApplicationWrapper::OnIdle);
+    glutCloseFunc(ApplicationWrapper::OnClose);
 	TwGLUTModifiersFunc(glutGetModifiers);
 
     // initialize application
@@ -100,14 +101,8 @@ void Application::Run(InitClientCallBack initCallback,
 
 void Application::Close()
 {
-    // call cleanup callback before terminating
-    if (m_cleanupCallback)
-        m_cleanupCallback(this, m_cleanupCallbackData);
-
     // cleanup the application and ImGui
-    ApplicationWrapper::OnCleanup();
-
-    // safely close GLUT: http://stackoverflow.com/questions/5033832
+    ApplicationWrapper::OnClose();
     glutLeaveMainLoop();
 }
 
@@ -135,12 +130,10 @@ Ray Application::GetRayFromScreenCoords(int x, int y, Math::Vector3 const& camer
 
     GLfloat z_cursor;
     glReadPixels(static_cast<GLint>(screenPos.x), static_cast<GLint>(screenPos.y), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z_cursor);
-
     // obtain the world coordinates
-
     double rayX, rayY, rayZ;
     gluUnProject(screenPos.x, screenPos.y, z_cursor, modelview, projection, viewport, &rayX, &rayY, &rayZ);
-
+    
     Ray ray;
     ray.SetStartPosition(cameraPos);
     Math::Vector3 direction = Math::Vector3(static_cast<float>(rayX), static_cast<float>(rayY), static_cast<float>(rayZ)) - ray.GetStartPosition();
@@ -156,7 +149,6 @@ Ray Application::GetRayFromScreenCoords(int x, int y, Math::Vector3 const& camer
 void Application::ApplicationWrapper::OnWindowResize(int width, int height)
 {
     // framebuffer manager is to update the viewport now
-
     // update the dimensions as far as the application knows; this allows the
     // projection matrix being used to project to the correct dimensions
     Application* app = &GetInstance();
@@ -212,8 +204,11 @@ void Application::ApplicationWrapper::OnDraw()
 
 }
 
-void Application::ApplicationWrapper::OnCleanup()
-{
+void Application::ApplicationWrapper::OnClose()
+{   
+    // call cleanup callback before terminating
+    if (GetInstance().m_cleanupCallback)
+        GetInstance().m_cleanupCallback(&GetInstance(), GetInstance().m_cleanupCallbackData);
 }
 
 

@@ -24,7 +24,7 @@ namespace Graphics
   std::shared_ptr<Framebuffer> const &FramebufferManager::RegisterFramebuffer(
     FramebufferType type, u32 width, u32 height)
   {
-    if (type == FramebufferType::SCREEN)
+    if (type == FramebufferType::Screen)
       return NullFramebuffer; // don't allow screen to be replaced
 
     // create new framebuffer given dimensions; save the framebuffer given the
@@ -57,7 +57,7 @@ namespace Graphics
 
   void FramebufferManager::Bind(FramebufferType type) const
   {
-    if (type == FramebufferType::SCREEN)
+    if (type == FramebufferType::Screen)
     {
       // binding 0 framebuffer unbinds previous, thereby binding the screen
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -75,7 +75,7 @@ namespace Graphics
   void FramebufferManager::SetClearColor(FramebufferType type,
     Color const &color)
   {
-    if (type == FramebufferType::SCREEN)
+    if (type == FramebufferType::Screen)
       m_screenClearColor = color;
     else
     {
@@ -87,7 +87,7 @@ namespace Graphics
 
   void FramebufferManager::Clear(FramebufferType type) const
   {
-    if (type == FramebufferType::SCREEN)
+    if (type == FramebufferType::Screen)
     {
       // reset clear color in case it changed
       glClearColor(m_screenClearColor.r, m_screenClearColor.g,

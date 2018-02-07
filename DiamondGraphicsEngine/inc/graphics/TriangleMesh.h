@@ -4,6 +4,7 @@
 #include "framework/Utilities.h"
 #include "math/Vector3.h"
 #include "graphics/Mesh.h"
+#include "graphics/MeshManager.h"
 
 namespace Graphics
 {
@@ -27,6 +28,7 @@ namespace Graphics
     class TriangleMesh
         : public Mesh
     {
+        friend class MeshManager::TriangleMeshHandler;
     public:
         /*******************************************************
          * @brief vertex object used in OpenGL, data in the struct
@@ -37,9 +39,12 @@ namespace Graphics
          *******************************************************/
         struct Vertex
         {
-            Math::Vector3 position = {0,0,0}; /* layout(location = 0) in vec3 vVertex; */
-            Math::Vector3 normal = {0,0,0}; /* layout(location = 1) in vec3 vNormal; */
-            Math::Vector2 uv = {0,0}; /* layout(location = 2) in vec3 vNormal; */
+            Math::Vector3 position = {0,0,0};       /* layout(location = 0) in vec3 vVertex;        */
+            Math::Vector3 normal = {0,0,0};         /* layout(location = 1) in vec3 vNormal;        */
+            Math::Vector2 uv = {0,0};               /* layout(location = 2) in vec3 vUv;            */
+            Math::Vector3 tangent = {0,0, 0};       /* layout(location = 3) in vec3 vTangent;       */
+            Math::Vector3 bitangent = {0,0, 0};     /* layout(location = 4) in vec3 vBitangent;     */
+
             
             Vertex() = default;
             Vertex(Math::Vector3 const& pos) :position(pos) {}
@@ -74,8 +79,8 @@ namespace Graphics
             TriangleFace(u32 _a, u32 _b, u32 _c);
         };
 
-        TriangleMesh();
-        ~TriangleMesh();
+        TriangleMesh() = default;
+        ~TriangleMesh() = default;
 
 	    /*******************************************************************
          * @brief Adds a vertex to the m_vertices array. This could be used by a mesh loader
@@ -105,8 +110,9 @@ namespace Graphics
          * and normalizing vertices to live within a range of [-0.5, 0.5]. This
          * should be called by a class loading the mesh or a class creating a new
          * mesh from memory.
+         * @param defaultUvType Default uv type on the mesh.
          ******************************************************************/
-        void Preprocess() override;
+        void Preprocess(DefaultUvType defaultUvType = DefaultUvType::None) override;
 
 	    /*******************************************************************
          * @brief Retrieves the number of vertices stored within the mesh.
@@ -203,6 +209,7 @@ namespace Graphics
 		///////////////////////////////////////////////////////////////////////
         TriangleMesh* CalcUvSpherical();
         TriangleMesh* CalcUvBox();
+        TriangleMesh* CalcTanBitan();
 
     private:
 	    /*******************************************************************
@@ -226,6 +233,8 @@ namespace Graphics
         std::vector<Vertex> m_vertices;
         std::vector<TriangleFace> m_triangles;
         std::vector<Math::Vector3> m_triangleNormals;
+        std::vector<Math::Vector3> m_tangent;
+        std::vector<Math::Vector3> m_bitangent;
 
     };
 }

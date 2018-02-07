@@ -184,6 +184,7 @@ void Component::Transform::Reflect(TwBar* editor, std::string const& /*barName*/
 
     TwAddVarCB(editor, "Position", TW_TYPE_POINT(3), TwCallBack::SetPosition, TwCallBack::GetPosition, this, defStr.c_str());
     TwAddVarCB(editor, "Rotation Euler", TW_TYPE_POINT(3, 0.01f, "X degree", "Y degree", "Z degree"), TwCallBack::SetRotation, TwCallBack::GetRotation, this, (defStr + " help='degree'").c_str());
+
     TwAddVarCB(editor, "Scale", TW_TYPE_POINT(3), TwCallBack::SetScale, TwCallBack::GetScale, this, (defStr).c_str());
 }
 

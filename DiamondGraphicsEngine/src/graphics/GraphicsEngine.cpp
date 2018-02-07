@@ -9,6 +9,9 @@
 #include "graphics/TextureManager.h"
 #include "graphics/MaterialManager.h"
 #include "graphics/MeshManager.h"
+#include "graphics/FramebufferManager.h"
+#include "framework/Application.h"
+#include "graphics/Framebuffer.h"
 
 namespace Graphics
 {
@@ -23,6 +26,7 @@ namespace Graphics
         m_textureManager = std::make_shared<TextureManager>();
         m_materialManager = std::make_shared<MaterialManager>();
         m_meshManager = std::make_shared<MeshManager>();
+        m_frameBufferManager = std::make_shared<FramebufferManager>(&Application::GetInstance());
 
         SetBackgroundColor(Color(0.1f,0.1f,0.1f));
         EnableDepthTest();
@@ -102,11 +106,15 @@ namespace Graphics
         }
     }
 
-    void GraphicsEngine::deferredRender(std::shared_ptr<Shader> shader, std::unordered_map<ObjectId, RenderObject*>& obj)
+    void GraphicsEngine::deferredRender(const std::shared_ptr<Shader>& shader, std::unordered_map<ObjectId, RenderObject*>& obj)
     {
         std::shared_ptr<ShaderProgram> program = shader->GetShaderProgram(ShaderStage::DiffuseMaterial);
         program->Bind();
         //TODO Deferred Shading Step 1 : fill framebuffer with multiple attachments(GBuffer)
+
+        EnableDepthTest();
+        m_frameBufferManager->Bind(FramebufferType::DeferredGBuffer);
+        m_frameBufferManager->Clear(FramebufferType::DeferredGBuffer);
 
         for (auto& j : obj)//per object
         {
@@ -114,17 +122,32 @@ namespace Graphics
             {
                 k->SetShaderParams(program, this);
             }
+            m_textureManager->UnbindAll();
         }
+        DisableDepthTest();
 
         //TODO Deferred Shading Step 2 : Set Light and framebuffer textures
-        program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
+        //program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
+        //program->Bind();
+        //m_lightManager->SetLightsUniform(program);
+        //m_viewCamera->SetCameraUniforms(program);
+
+
+        //TODO Deferred Shading Step 3 : Render FSQ
+        m_frameBufferManager->Bind(FramebufferType::Screen);
+        program = shader->GetShaderProgram(ShaderStage::DeferredLighting/*this is ONLY TEST*/);
         program->Bind();
+
         m_lightManager->SetLightsUniform(program);
 
-        
-        //TODO Deferred Shading Step 3 : Render FSQ
-        program = shader->GetShaderProgram(ShaderStage::RenderFullScreenQuad);
-        program->Bind();
+        std::shared_ptr<Framebuffer> fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
+        fbo->BindGBufferTextures(program);
+        fbo->BindDepthTexture(program);
+        m_meshManager->GetMesh("FSQ")->Render();
+        program->SetUniform("DebugOutputIndex", DeferredRenderDebugOutputIndex);
+        float screenWidth = static_cast<float>(fbo->GetWidth());
+        float screenHeight = static_cast<float>(fbo->GetHeight());
+        program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));
     }
 }
 

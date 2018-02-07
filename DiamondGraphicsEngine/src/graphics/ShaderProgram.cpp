@@ -501,6 +501,13 @@ namespace Graphics
         glUniform3fv(location, 1, vector.ToFloats());
     }
 
+    void ShaderProgram::SetUniform(std::string const& name, Math::Vector2 const& vector)
+    {
+        // glUniform4fv sets a vec4 using an array of floats
+        u32 location = GetUniform(name);
+        glUniform2fv(location, 1, vector.ToFloats());
+    }
+
     void ShaderProgram::SetUniform(std::string const &name,
     Math::Matrix4 const &matrix)
   {

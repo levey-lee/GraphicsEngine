@@ -24,11 +24,13 @@ namespace Graphics
     {
         //this will be written by light component
         bool isActive = true;
+        bool castShadow = false;
         //this will be written by light component
         Math::Vector4 position = Math::Vector4( 0,0,0,1 );
         Math::Vector4 direction = Math::Vector4( 0,0, -1,0 );
         LightType type = LightType::Directional;
         float intensity = 1.0f;
+        float radius = 10.0f;
         float innerAngle = Math::c_Pi / 12.0f;//15 degree
         float outerAngle = Math::c_Pi / 6.0f;//30 degree
         float spotFalloff = 1.0f;

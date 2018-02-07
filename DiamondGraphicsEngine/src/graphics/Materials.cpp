@@ -25,7 +25,7 @@ namespace Graphics
         std::shared_ptr<ShaderManager> shaderManager = g->GetShaderManager();
         
         shader->SetUniform("Material.ReceiveLight", m_ifReceiveLight);
-        
+
         /// numbers from 0 to 10 as mtl file format illum model index
         /// see reference at https://en.wikipedia.org/wiki/Wavefront_.obj_file
         /// see datailed refernce at http://paulbourke.net/dataformats/mtl/
@@ -91,9 +91,12 @@ namespace Graphics
         ////////////////////////////////////////////////////////////////////////
         if (m_isDiffuseTextureEnabled && m_diffuseTexture.second != nullptr)
         {
-            Assert(m_diffuseTexture.second->IsBuilt(), "Texture with name \"%s\" is not build.", m_diffuseTexture.second->GetTextureName().c_str());
-            textureManager->BindTexture(m_diffuseTexture.second, shader, "Material.DiffuseTexture", m_diffuseTexture.first);
-            shader->SetUniform("Material.DiffuseTextureEnabled", true);
+            //Assert(m_diffuseTexture.second->IsBuilt(), "Texture with name \"%s\" is not build.", m_diffuseTexture.second->GetTextureName().c_str());
+            //todo if (m_diffuseTexture.second->IsBuilt())
+            {
+                textureManager->BindTexture(m_diffuseTexture.second, shader, "Material.DiffuseTexture", m_diffuseTexture.first);
+                shader->SetUniform("Material.DiffuseTextureEnabled", true);
+            }
         }
         else
         {
@@ -104,9 +107,12 @@ namespace Graphics
         ////////////////////////////////////////////////////////////////////////
         if (m_isSpecularTextureEnabled && m_specularTexture.second != nullptr)
         {
-            Assert(m_specularTexture.second->IsBuilt(), "Texture with name \"%s\" is not build.", m_specularTexture.second->GetTextureName().c_str());
-            textureManager->BindTexture(m_specularTexture.second, shader, "Material.SpecularTexture", m_specularTexture.first);
-            shader->SetUniform("Material.SpecularTextureEnabled", true);
+            //todo if (m_specularTexture.second->IsBuilt())
+            {
+                //Assert(m_specularTexture.second->IsBuilt(), "Texture with name \"%s\" is not build.", m_specularTexture.second->GetTextureName().c_str());
+                textureManager->BindTexture(m_specularTexture.second, shader, "Material.SpecularTexture", m_specularTexture.first);
+                shader->SetUniform("Material.SpecularTextureEnabled", true);
+            }
         }
         else
         {
@@ -117,9 +123,12 @@ namespace Graphics
         ////////////////////////////////////////////////////////////////////////
         if (m_isNormalMapTextureEnabled && m_normalMapTexture.second != nullptr)
         {
-            Assert(m_normalMapTexture.second->IsBuilt(), "Texture with name \"%s\" is not build.", m_normalMapTexture.second->GetTextureName().c_str());
-            textureManager->BindTexture(m_normalMapTexture.second, shader, "Material.NormalMapTexture", m_normalMapTexture.first);
-            shader->SetUniform("Material.NormalMapTextureEnabled", true);
+            //todo if (m_normalMapTexture.second->IsBuilt())
+            {
+                //Assert(m_normalMapTexture.second->IsBuilt(), "Texture with name \"%s\" is not build.", m_normalMapTexture.second->GetTextureName().c_str());
+                textureManager->BindTexture(m_normalMapTexture.second, shader, "Material.NormalMapTexture", m_normalMapTexture.first);
+                shader->SetUniform("Material.NormalMapTextureEnabled", true);
+            }
         }
         else
         {

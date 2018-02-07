@@ -17,10 +17,6 @@ const Vector2 Vector2::cZero(0.0f, 0.0f);
 const Vector2 Vector2::cXAxis(1.0f, 0.0f);
 const Vector2 Vector2::cYAxis(0.0f, 1.0f);
 
-float* Vector2::ToFloats()
-{
-  return (float*)this;
-}
 
 Vector2::Vector2(float x_, float y_)
 {
@@ -34,7 +30,12 @@ Vector2::Vector2(ConstRealPointer data)
   array[1] = data[1];
 }
 
-float& Vector2::operator[](unsigned index)
+float const* Vector2::ToFloats() const
+{
+    return reinterpret_cast<const float *>(this);
+}
+
+    float& Vector2::operator[](unsigned index)
 {
   //ErrorIf(index > 1, "Math::Vector2 - Subscript out of range.");
   return array[index];

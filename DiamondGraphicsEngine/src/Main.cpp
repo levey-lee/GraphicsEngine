@@ -24,7 +24,9 @@
 #include "core/TwImpl.h"
 #include "graphics/MaterialManager.h"
 #include "core/components/Skydome.h"
-
+#include "graphics/Texture.h"
+#include "graphics/FramebufferManager.h"
+#include "graphics/Framebuffer.h"
 
 static const unsigned c_DefaultWindowWidth = 1280;
 static const unsigned c_DefaultWindowHeight = 760;
@@ -49,7 +51,7 @@ ObjectHandle g_Mars;
 
 
 //**************************************************************************
-void Initialize(Application*, void* /*userdata*/)
+void Initialize(Application* app, void* /*userdata*/)
 {
 	TwInit(TW_OPENGL, nullptr);
 	
@@ -60,79 +62,127 @@ void Initialize(Application*, void* /*userdata*/)
     //add materials to manager
     std::shared_ptr<MaterialManager> materialManager = g_Graphics->GetMaterialManager();
     materialManager->LoadMaterials("basic.mtl", g_Graphics);
+
+    std::shared_ptr<FramebufferManager> fboManager = g_Graphics->GetFrameBufferManager();
+    fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build();
+
     
     ////////////////////////////////////////////////////////////////////////////
     //      Create meshes
     std::shared_ptr<MeshManager> meshManager = g_Graphics->GetMeshManager();
+    std::shared_ptr<TriangleMesh> lowSphereMesh = meshManager->TriangleMeshHandler.BuildSphere("lowPolySphere", DefaultUvType::Spherical);
+    lowSphereMesh->Build();
 #if SAMPLE_IMPLEMENTATION
+#if 0
 
-    std::shared_ptr<TriangleMesh> spongeMesh = meshManager->m_TriangleMeshHandler.LoadObjMesh("sponge", "menger_sponge_level_1_low_poly.obj");
-    //std::shared_ptr<TriangleMesh> spongeMesh = TriangleMeshLoader::LoadObjMesh("cube_high_poly.obj");
-    spongeMesh->CalcUvBox()->Build();
+    std::shared_ptr<TriangleMesh> spongeMesh = meshManager->TriangleMeshHandler.LoadObjMesh("sponge", "menger_sponge_level_1_low_poly.obj", DefaultUvType::Box);
+    spongeMesh->Build();
     //------------------------------------------------------------------------------
-    std::shared_ptr<TriangleMesh> sphereMesh = meshManager->m_TriangleMeshHandler.LoadObjMesh("sphere", "sphere.obj");
-    sphereMesh->CalcUvSpherical()->Build();
+    std::shared_ptr<TriangleMesh> sphereMesh = meshManager->TriangleMeshHandler.LoadObjMesh("sphere", "sphere.obj", DefaultUvType::Spherical);
+    sphereMesh->Build();
     //------------------------------------------------------------------------------
-    std::shared_ptr<TriangleMesh> sphereReversedMesh = meshManager->m_TriangleMeshHandler.LoadObjMesh("sphereReversed", "sphereReversed.obj");
-    sphereReversedMesh->CalcUvSpherical()->Build();
+    std::shared_ptr<TriangleMesh> sphereReversedMesh = meshManager->TriangleMeshHandler.LoadObjMesh("sphereReversed", "sphereReversed.obj", DefaultUvType::Spherical);
+    sphereReversedMesh->Build();
     //------------------------------------------------------------------------------
-    std::shared_ptr<TriangleMesh> lowSphereMesh = meshManager->m_TriangleMeshHandler.BuildSphere("lowPolySphere");
-    lowSphereMesh->CalcUvSpherical()->Build();
+    std::shared_ptr<TriangleMesh> teapot = meshManager->TriangleMeshHandler.LoadObjMesh("teapot", "teapot.obj", DefaultUvType::Box);
+    teapot->Build();
     //------------------------------------------------------------------------------
-    std::shared_ptr<TriangleMesh> teapot = meshManager->m_TriangleMeshHandler.LoadObjMesh("teapot", "teapot.obj");
-    teapot->CalcUvBox()->Build();
+    std::shared_ptr<TriangleMesh> cube = meshManager->TriangleMeshHandler.LoadObjMesh("cube", "cube.obj", DefaultUvType::Box);
+    cube->Build();
     //------------------------------------------------------------------------------
-    std::shared_ptr<TriangleMesh> cube = meshManager->m_TriangleMeshHandler.LoadObjMesh("cube", "cube.obj");
-    cube->CalcUvBox()->Build();
+    std::shared_ptr<TriangleMesh> planeMesh = meshManager->TriangleMeshHandler.LoadObjMesh("plane", "plane_low_poly.obj", DefaultUvType::Box);
+    planeMesh->Build();
+#else
+    meshManager->TriangleMeshHandler.LoadAndBuildObjMeshMultiThread(
+    {
+        { "sponge" ,        "menger_sponge_level_1_high_poly.obj" , DefaultUvType::Box },
+        { "sphere" ,        "sphere.obj" , DefaultUvType::Spherical },
+        { "sphereReversed", "sphereReversed.obj" , DefaultUvType::Spherical },
+        { "teapot" ,        "teapot.obj" , DefaultUvType::Box },
+        { "cube" ,          "cube.obj" , DefaultUvType::Box },
+        { "plane" ,          "plane_low_poly.obj" , DefaultUvType::Box },
+    });
+
+    std::shared_ptr<Mesh> spongeMesh = meshManager->GetMesh("sponge");
+    //--------------------------------------
+    std::shared_ptr<Mesh> sphereMesh = meshManager->GetMesh("sphere");
+    //--------------------------------------
+    std::shared_ptr<Mesh> sphereReversedMesh = meshManager->GetMesh("sphereReversed");
+    //--------------------------------------
+    std::shared_ptr<Mesh> teapot = meshManager->GetMesh("teapot");
+    //--------------------------------------
+    std::shared_ptr<Mesh> cube = meshManager->GetMesh("cube");
+    //--------------------------------------
+    std::shared_ptr<Mesh> planeMesh = meshManager->GetMesh("plane");
+
+#endif // 0
 #endif // SAMPLE_IMPLEMENTATION
-    std::shared_ptr<TriangleMesh> triangleMesh = meshManager->m_TriangleMeshHandler.BuildTriangle("SampleTriangle");
+    //------------------------------------------------------------------------------
+    std::shared_ptr<TriangleMesh> triangleMesh = meshManager->TriangleMeshHandler.BuildTriangle("SampleTriangle");
     triangleMesh->Build();
-
+    //------------------------------------------------------------------------------
+    meshManager->TriangleMeshHandler.BuildFullScreenQuad("FSQ")->Build();
+    //------------------------------------------------------------------------------
+    std::shared_ptr<TriangleMesh> tank = meshManager->TriangleMeshHandler.LoadObjMeshWithUvNormal("BTR80A","BTR80A.obj");
+    tank->Build();
+    //------------------------------------------------------------------------------
 
     ////////////////////////////////////////////////////////////////////////////
     //      Shader
     std::shared_ptr<ShaderManager> shaderManager = g_Graphics->GetShaderManager();
-    shaderManager->LoadShader(ShaderType::UberForward, "shader.vert", "shader.frag");
+#if DEFERRED_SHADING_TEST
+    ShaderType usingShader = ShaderType::UberDeferred;
+    shaderManager->LoadShader(usingShader,
+    {
+        { "DeferredStage0.vert", "DeferredStage0.frag" },
+        //{ "DeferredStage1.vert", "DeferredStage1.frag" },
+        { "DeferredStage2.vert", "DeferredStage2.frag" }
+    });
+#else
+    ShaderType usingShader = ShaderType::UberForward;
+    shaderManager->LoadShader(usingShader, "shader.vert", "shader.frag");
+#endif // DEFERRED_SHADING_TEST
+
 
     ////////////////////////////////////////////////////////////////////////////
     //      Create scene objects
     {
         //objects
 
-        Object& sun = g_MainScene.CreateObject(ShaderType::UberForward);
-        sun.AddComponent<Renderer>(materialManager->GetMaterial("Sample Sun"), sphereMesh);
+        Object& sun = g_MainScene.CreateObject(usingShader);
+        sun.AddComponent<Renderer>(materialManager->GetMaterial("Sun"), sphereMesh);
         sun.GetComponentRef<Component::Transform>().SetPosition({0,0,-2}).SetScale({1,1,1}).SetRotation({ 0.1f,0,0.1f });
         g_Sun = sun.GetHandle();
         sun.AddComponent<Light>()
 	        .SetLightType(LightType::Point)
 	        ->SetDirection({ 1,-1,-1 })
-	        ->SetAmbientColor(Color(1, 1, 1));
+	        ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
         sun.SetName("Sun");
 
 #if SAMPLE_IMPLEMENTATION
 
-        Object& mercury = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& mercury = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         mercury.AddComponent<Renderer>(materialManager->GetMaterial("Mercury"), sphereMesh);
-        mercury.GetComponentRef<Component::Transform>().SetPosition({ 1,0,0 }).SetScale(0.1f).SetRotation({ 0,0,0.1f });
+        mercury.GetComponentRef<Component::Transform>().SetPosition({ 1,0,0 }).SetScale(0.2f).SetRotation({ 0,0,0.1f });
         g_Mercury = mercury.GetHandle();
         mercury.SetName("Mercury");
 
 
-        Object& venus = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& venus = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         venus.AddComponent<Renderer>(materialManager->GetMaterial("Venus"), sphereMesh);
         venus.GetComponentRef<Component::Transform>().SetPosition({ 2,0,0 }).SetScale(0.25f).SetRotation({ 0,0,0.1f });
         g_Venus = venus.GetHandle();;
         venus.SetName("Venus");
 
 
-        Object& earth = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& earth = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         earth.AddComponent<Renderer>(materialManager->GetMaterial("Earth"), sphereMesh);
         earth.GetComponentRef<Component::Transform>().SetPosition({ 3,0,0 }).SetScale(0.3f).SetRotation({ 0,0,0.1f });
         g_Earth = earth.GetHandle();
         earth.SetName("Earth");
 
 
-        Object& moon = g_MainScene.CreateChildObject(earth.GetHandle(), ShaderType::UberForward);
+        Object& moon = g_MainScene.CreateChildObject(earth.GetHandle(), usingShader);
         Renderer& rendererComp2 = moon.AddComponent<Renderer>(nullptr, nullptr);
         rendererComp2.AssignMaterial(materialManager->GetMaterial("Moon")).AttachMesh(sphereMesh);
         Component::Transform& moonTrans = moon.GetComponentRef<Component::Transform>();
@@ -144,7 +194,7 @@ void Initialize(Application*, void* /*userdata*/)
 
 
 
-        Object& mars = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& mars = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         Renderer& rendererCompMars = mars.AddComponent<Renderer>(nullptr, nullptr);
         rendererCompMars.AssignMaterial(materialManager->GetMaterial("Mars")).AttachMesh(sphereMesh);
         Component::Transform& marsTrans = mars.GetComponentRef<Component::Transform>();
@@ -154,42 +204,53 @@ void Initialize(Application*, void* /*userdata*/)
         mars.SetName("Mars");
 
 
-        Object& jupiter = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& jupiter = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         jupiter.AddComponent<Renderer>(materialManager->GetMaterial("Jupiter"), sphereMesh);
         jupiter.GetComponentRef<Component::Transform>().SetPosition({ 5,0,0 }).SetScale(0.8f).SetRotation({ 0,0,0.1f });
         g_Jupiter = jupiter.GetHandle();;
         jupiter.SetName("Jupiter");
 
         
-        Object& saturn = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& saturn = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         saturn.AddComponent<Renderer>(materialManager->GetMaterial("Saturn"), sphereMesh);
         saturn.GetComponentRef<Component::Transform>().SetPosition({ 6,0,0 }).SetScale(0.6f).SetRotation({ 0,0,0.1f });
         g_Saturn = saturn.GetHandle();
         saturn.SetName("Saturn");
 
         
-        Object& uranus = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& uranus = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         uranus.AddComponent<Renderer>(materialManager->GetMaterial("Uranus"), sphereMesh);
         uranus.GetComponentRef<Component::Transform>().SetPosition({ 7.5f,0,0 }).SetScale(0.5f).SetRotation({ 0,0,0.1f });
         g_Uranus = uranus.GetHandle();
         uranus.SetName("Uranus");
 
         
-        Object& neptune = g_MainScene.CreateChildObject(sun.GetHandle(), ShaderType::UberForward);
+        Object& neptune = g_MainScene.CreateChildObject(sun.GetHandle(), usingShader);
         neptune.AddComponent<Renderer>(materialManager->GetMaterial("Neptune"), sphereMesh);
         neptune.GetComponentRef<Component::Transform>().SetPosition({ 9.5f,0,0 }).SetScale(0.55f).SetRotation({ 0,0,0.1f });
         g_Neptune = neptune.GetHandle();
         neptune.SetName("Neptune");
 
+
+        Object& plane = g_MainScene.CreateObject(usingShader);
+        plane.AddComponent<Renderer>(materialManager->GetMaterial("Plane"), planeMesh);
+        plane.GetComponentRef<Component::Transform>().SetPosition({ 0,-10,-30 }).SetScale(0.05f).SetRotation({ 0,0,0 });
+        plane.SetName("plane");
+        
         ///////////////////////////////////////////////////
         ///////////////////////////////////////////////////
         ///////////////////////////////////////////////////
-        Object& camObj = g_MainScene.CreateObject(ShaderType::UberForward);
+        Object& camObj = g_MainScene.CreateObject(usingShader);
         Component::Transform& camtrans = camObj.GetComponentRef<Component::Transform>();
-        camtrans.SetPosition({ 0,0,16 });
+        camtrans.SetPosition({ 0,2,6 });
+        camtrans.SetRotation({ -0.2f,0,0 });
         camtrans.SetScale(500.0f);
         camObj.AddComponent<Camera>(camtrans, true, g_Graphics.get());
         camObj.AddComponent<Skydome>(materialManager->GetMaterial("Skydome"), sphereReversedMesh);
+        //camObj.AddComponent<Light>()
+        //    .SetLightType(LightType::Directional)
+        //    ->SetDirection({ 1,-1,-1 })
+        //    ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
         g_Cam = camObj.GetHandle();
         camObj.SetName("Camera");
 #endif // SAMPLE_IMPLEMENTATION
@@ -206,6 +267,7 @@ void Update(Application* /*application*/, float dt, void* /*userdata*/)
 {
     g_MainScene.UpdateScene(dt);
 
+
 #if SAMPLE_IMPLEMENTATION
     Object& sun = g_MainScene.GetObjectRef(g_Sun);
     Object& earth = g_MainScene.GetObjectRef(g_Earth);
@@ -218,10 +280,10 @@ void Update(Application* /*application*/, float dt, void* /*userdata*/)
     Object& saturn  = g_MainScene.GetObjectRef(g_Saturn);
     Object& uranus  = g_MainScene.GetObjectRef(g_Uranus);
     Object& neptune = g_MainScene.GetObjectRef(g_Neptune);
-    Object& cam = g_MainScene.GetObjectRef(g_Cam);
+    Object& cam     = g_MainScene.GetObjectRef(g_Cam);
 
 
-    Component::Transform& sunTrans  = sun.GetComponentRef<Component::Transform>();
+    Component::Transform& sunTrans      = sun.GetComponentRef<Component::Transform>();
     Component::Transform& earthTrans    = earth.GetComponentRef<Component::Transform>();
     Component::Transform& marsTrans     = mars.GetComponentRef<Component::Transform>();
     Component::Transform& moonTrans     = moon.GetComponentRef<Component::Transform>();
@@ -230,8 +292,8 @@ void Update(Application* /*application*/, float dt, void* /*userdata*/)
     Component::Transform& jupiterTrans  =    jupiter.GetComponentRef<Component::Transform>();
     Component::Transform& saturnTrans   =     saturn .GetComponentRef<Component::Transform>();
     Component::Transform& uranusTrans   =     uranus .GetComponentRef<Component::Transform>();
-    Component::Transform& neptuneTrans =    neptune.GetComponentRef<Component::Transform>();
-    Component::Transform& camTrans = cam.GetComponentRef<Component::Transform>();
+    Component::Transform& neptuneTrans  =    neptune.GetComponentRef<Component::Transform>();
+    Component::Transform& camTrans      = cam.GetComponentRef<Component::Transform>();
 
 
     //sunTrans.Rotate(Vector3(0, dt * 0.11f, 0));
@@ -258,19 +320,22 @@ void Update(Application* /*application*/, float dt, void* /*userdata*/)
     uranusTrans .Orbit({ 0,1,0 }, dt * 0.1f);
     neptuneTrans.Orbit({ 0,1,0 }, dt * 0.5f);
 
-
-
-
-
-
-
-
-
 #endif
     g_Graphics->RenderScene(&g_MainScene);
 	TwDraw();
 }
 
+//**************************************************************************
+void Loading(Application* application, float dt, void* userdata)
+{
+    std::shared_ptr<TextureManager> textureManager = g_Graphics->GetTextureManager();
+    size_t remainingJobs = textureManager->ProcessThreadLoadedTexture();
+    Update(application, dt, userdata);
+    if (remainingJobs == 0)
+    {
+        application->SetUpdateFunc(Update);
+    }
+}
 //**************************************************************************
 void Cleanup(Application* /*application*/, void* /*udata*/)
 {
@@ -281,9 +346,13 @@ void Cleanup(Application* /*application*/, void* /*udata*/)
 //**************************************************************************
 void OnViewportChanged(Application* application)
 {
+    
     g_Graphics->GetViewCamera()->SetDimension(
         static_cast<float>(application->GetWindowWidth()),
         static_cast<float>(application->GetWindowHeight()));
+    auto fboManager = g_Graphics->GetFrameBufferManager();
+    fboManager->GetFramebuffer(FramebufferType::DeferredGBuffer)->Resize(
+        application->GetWindowWidth(), application->GetWindowHeight());
 }
 
 //**************************************************************************
@@ -311,7 +380,7 @@ void OnMouseButtonDown(Application* application, int button, int x, int y)
     if (button == GLUT_LEFT_BUTTON)
     {
         Ray selectionRay = application->GetRayFromScreenCoords(x, y,
-            g_Graphics->GetViewCamera()->GetCameraLocalPosition(),
+            g_Graphics->GetViewCamera()->GetCameraWorldPosition(),
             g_Graphics->GetViewCamera()->GetViewMatrix(),
             g_Graphics->GetViewCamera()->GetProjMatrix()
         );
@@ -342,14 +411,16 @@ void OnMouseButtonDown(Application* application, int button, int x, int y)
         }
     }
 }
+
+
 //**************************************************************************
 int main(int argc, char* argv[])
 {
     Application* app = &Application::GetInstance();
-    app->Initialize(argc, argv, "Diamond Graphics Engine", c_DefaultWindowWidth, c_DefaultWindowHeight);
+    app->Initialize(argc, argv, "CS300 Course Framework", c_DefaultWindowWidth, c_DefaultWindowHeight);
     app->SetOnViewportChanged(OnViewportChanged);
     app->SetMouseWheelCallback(OnMouseWheel);
     app->SetMouseButtonDownCallback(OnMouseButtonDown);
-    app->Run(Initialize, Update, Cleanup);
+    app->Run(Initialize, Loading, Cleanup);
     return 0;
 }

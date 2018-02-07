@@ -1,12 +1,13 @@
 #ifndef H_MESH_LOADER
 #define H_MESH_LOADER
-
+#include "graphics/Mesh.h"
 namespace Math {
     struct Vector3;
 }
 
 namespace Graphics
 {
+    enum class DefaultUvType;
     class Mesh;
     class TriangleMesh;
 
@@ -49,13 +50,14 @@ namespace Graphics
              * @brief Build a triangle manually. Right-hand system.
              * @return A shared pointer to the newly created mesh.
              *******************************************************/
-            std::shared_ptr<TriangleMesh> BuildTriangle(std::string const &meshLabel);
+            std::shared_ptr<TriangleMesh> BuildTriangle(std::string const &meshLabel, DefaultUvType defaultUvType = DefaultUvType::None);
+            std::shared_ptr<TriangleMesh> BuildFullScreenQuad(std::string const &meshLabel);
             /*******************************************************
              * @brief Build a sphere mesh manually. Right-hand system.
              * @return A shared pointer to the newly created mesh.
              * @note It has a hole at poles.
              *******************************************************/
-            std::shared_ptr<TriangleMesh> BuildSphere(std::string const &meshLabel);
+            std::shared_ptr<TriangleMesh> BuildSphere(std::string const &meshLabel, DefaultUvType defaultUvType = DefaultUvType::None);
             /*******************************************************************
             * @brief
             * Loads a new TriangleMesh from a Wavefront OBJ file, given that files
@@ -65,15 +67,24 @@ namespace Graphics
             * @param objFileName Relative file name in the assets/models folder.
             * @return A shared pointer to the newly created mesh.
             ******************************************************************/
-            std::shared_ptr<TriangleMesh> LoadObjMesh(std::string const &meshLabel, std::string const &objFileName);
-        }m_TriangleMeshHandler;
+            std::shared_ptr<TriangleMesh> LoadObjMesh(std::string const &meshLabel, std::string const &objFileName, DefaultUvType defaultUvType = DefaultUvType::None);
+            std::shared_ptr<TriangleMesh> LoadObjMeshWithUvNormal(std::string const &meshLabel, std::string const &objFileName);
 
+            void LoadAndBuildObjMeshMultiThread(                               
+                const std::vector< std::tuple<std::string /*meshLabel*/, std::string /*objFileName*/ , DefaultUvType> >&meshList
+            );
+
+            std::shared_ptr<TriangleMesh> GetMesh(std::string const& label) const;
+        }TriangleMeshHandler;
+
+        std::shared_ptr<Mesh> GetMesh(std::string const& label) const;
         /*******************************************************
          * @brief Get all meshes. Use vector for editor enum to index.
          * @return A vector of all mesh pointers.
          *******************************************************/
         std::vector<std::shared_ptr<Mesh> > GetAllMeshes();
     private:
+        static std::shared_mutex m_meshListMutex;
         static std::unordered_map<std::string /*label*/, std::shared_ptr<Mesh> >m_meshes;
     };
 }

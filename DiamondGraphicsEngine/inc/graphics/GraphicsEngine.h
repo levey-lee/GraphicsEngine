@@ -14,6 +14,7 @@ namespace Graphics
     class CameraBase;
     class ShaderManager;
     class TextureManager;
+    class FramebufferManager;
     class GraphicsEngine
     {
     public:
@@ -22,11 +23,12 @@ namespace Graphics
 
         CameraBase* GetViewCamera() const { return m_viewCamera; }
 
-        std::shared_ptr<TextureManager>  GetTextureManager() const { return m_textureManager; }
-        std::shared_ptr<ShaderManager>   GetShaderManager() const { return m_shaderManager; }
-        std::shared_ptr<LightManager>    GetLightManager() const { return m_lightManager; }
-        std::shared_ptr<MaterialManager> GetMaterialManager() const { return m_materialManager; }
-        std::shared_ptr<MeshManager>     GetMeshManager() const { return m_meshManager; }
+        std::shared_ptr<TextureManager>     GetTextureManager()     const { return m_textureManager; }
+        std::shared_ptr<ShaderManager>      GetShaderManager()      const { return m_shaderManager; }
+        std::shared_ptr<LightManager>       GetLightManager()       const { return m_lightManager; }
+        std::shared_ptr<MaterialManager>    GetMaterialManager()    const { return m_materialManager; }
+        std::shared_ptr<MeshManager>        GetMeshManager()        const { return m_meshManager; }
+        std::shared_ptr<FramebufferManager> GetFrameBufferManager() const { return m_frameBufferManager; }
         Color GetBackgroundColor() const { return m_backgroundColor; }
         /*******************************************************
          * @brief This sets a camera to be a view camera. It can be derived from
@@ -39,20 +41,23 @@ namespace Graphics
         void SetBackgroundColor(Color const& color);
         void EnableDepthTest() const {glEnable(GL_DEPTH_TEST); }
         void DisableDepthTest() const { glDisable(GL_DEPTH_TEST); }
+
+        int DeferredRenderDebugOutputIndex = 0;
     private:
         void renderScene(Scene* scene);
         void forwardRender(const std::shared_ptr<Shader>& shader, std::unordered_map<ObjectId, RenderObject*>& obj);
-        void deferredRender(std::shared_ptr<Shader> shader, std::unordered_map<ObjectId, RenderObject*>& obj);
+        void deferredRender(const std::shared_ptr<Shader>& shader, std::unordered_map<ObjectId, RenderObject*>& obj);
 
         Color m_backgroundColor;
         CameraBase* m_viewCamera = nullptr;
         ComponentInterface* m_viewCamComp = nullptr;
         
-        std::shared_ptr<TextureManager>     m_textureManager;
-        std::shared_ptr<ShaderManager>      m_shaderManager;
-        std::shared_ptr<LightManager>       m_lightManager;
-        std::shared_ptr<MaterialManager>    m_materialManager;
-        std::shared_ptr<MeshManager>        m_meshManager;
+        std::shared_ptr<TextureManager>         m_textureManager;
+        std::shared_ptr<ShaderManager>          m_shaderManager;
+        std::shared_ptr<LightManager>           m_lightManager;
+        std::shared_ptr<MaterialManager>        m_materialManager;
+        std::shared_ptr<MeshManager>            m_meshManager;
+        std::shared_ptr<FramebufferManager>     m_frameBufferManager;
     };
 }
 

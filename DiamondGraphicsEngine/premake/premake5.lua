@@ -1,5 +1,5 @@
 
-local projectTitle = "DiamondGraphics"
+local assignmentTitle = "Assignment1"
 
 if _ACTION == "clean" then
   os.rmdir("../bin")
@@ -7,19 +7,19 @@ if _ACTION == "clean" then
   os.rmdir("./ipch")
   os.rmdir(".vs")
   os.rmdir("Debug")
-  os.remove("Diamond.sln")
-  os.remove("Diamond.sdf")
-  os.remove("Diamond.suo")
-  os.remove("Diamond.v11.suo")
-  os.remove("Diamond.v12.suo")
+  os.remove("CS300.sln")
+  os.remove("CS300.sdf")
+  os.remove("CS300.suo")
+  os.remove("CS300.v11.suo")
+  os.remove("CS300.v12.suo")
   os.remove("*.DB")
   os.exit()
 end
 
-solution "Diamond"
+solution "CS300"
   configurations { "Debug", "ReleaseSymbols", "Release" }
-  project(projectTitle)
-    targetname(projectTitle:lower())
+  project(assignmentTitle)
+    targetname(assignmentTitle:lower())
     kind "ConsoleApp"
     language "C++"
     location "projects"

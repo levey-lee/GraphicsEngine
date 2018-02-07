@@ -6,7 +6,6 @@ namespace Graphics
     class Shader
     {
     public:
-        Shader() = default;
         Shader(std::vector<std::shared_ptr<ShaderProgram>> const& shaderPrograms
                , bool isDeferred, ShaderType shaderType);
 

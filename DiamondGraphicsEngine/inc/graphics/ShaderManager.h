@@ -21,17 +21,16 @@ namespace Graphics
     enum class ShaderType
     {
         /*******************************************************
-         * @brief 
+         * @brief
          * This framework uses ubershader with different materials. Ubershader is just one giant shader
-         * that has many different branches. Some people may suggest that using many small shaders is a 
+         * that has many different branches. Some people may suggest that using many small shaders is a
          * better choice, but you need to do more work in this framework.(i.e. add shader specific code in
          * every shaded component, change vertex layout etc). The framework DOES support multiple shaders.
          * One of the best comparasion I can find on the internet is the following.
          * https://gamedev.stackexchange.com/questions/34883/glsl-all-in-one-or-many-shader-programs
          *******************************************************/
         UberForward = 0,
-        Skybox,
-
+        UberDeferred = 0,
         //TODO(STUDENT): Add more shaders if you don't want to use uber shader.
         Count,
 

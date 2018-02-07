@@ -35,7 +35,7 @@ namespace Component
         void CalcViewMatrix() override;
         Math::Vector3 const& CalcViewVector() override;
         Math::Vector3 GetCameraLocalPosition() override { return m_position; }
-        Math::Vector3 GetCameraWorldPosition() const;
+        Math::Vector3 GetCameraWorldPosition() override;
 
 		//////////////////////////////////////////////////
 		/// Editor

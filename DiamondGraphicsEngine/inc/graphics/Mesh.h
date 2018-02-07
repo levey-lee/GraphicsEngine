@@ -7,6 +7,12 @@
 
 namespace Graphics
 {
+    enum class DefaultUvType
+    {
+        None,
+        Box,
+        Spherical
+    };
 
 	/*******************************************************************
      * @brief A generic mesh class for render engine. Common derived mesh
@@ -75,7 +81,7 @@ namespace Graphics
          * for inheritance but useful. Usually you want to calculate normals,
          * UVs, set mesh etc in this function.
          ******************************************************************/
-        virtual void Preprocess() {}
+        virtual void Preprocess(DefaultUvType) {}
         /*******************************************************
          * @brief This functions gets how many vertex in this mesh.
          * @return Return the total amount of vertex.

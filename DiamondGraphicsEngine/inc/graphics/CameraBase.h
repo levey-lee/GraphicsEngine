@@ -39,7 +39,7 @@ namespace Graphics
         virtual float GetFieldOfViewDegree() { return Math::RadToDeg(m_fieldOfView); }
         virtual void SetFieldOfViewDegree(float angleDegree);
 
-        virtual Math::Vector2 GetDimension() const { return Math::Vector2( m_width, m_height ); }
+        virtual Math::Vector2 GetDimension() const { return { m_width, m_height }; }
         virtual void SetDimension(float width, float height);
 
         virtual float GetWidth() { return m_width; }
@@ -55,6 +55,7 @@ namespace Graphics
         virtual void SetFarPlaneDistance(float zFar);
 
         virtual Math::Vector3 GetCameraLocalPosition() { return {}; }
+        virtual Math::Vector3 GetCameraWorldPosition() { return {}; }
 
         static CameraBase DefaultCamera;
         static const Math::Vector3 DefaultViewDirection;
@@ -65,7 +66,7 @@ namespace Graphics
         virtual void OnCameraViewportChanged();
         
     private:
-        float m_fieldOfView = Math::c_Pi/4.0f;
+        float m_fieldOfView = Math::c_Pi/3.0f;
         float m_width = 160.0f;
         float m_height = 90.0f;
         float m_nearPlaneDist = 0.1f;

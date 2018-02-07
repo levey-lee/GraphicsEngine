@@ -25,12 +25,17 @@ namespace Graphics
     class Texture
     {
 		friend class TextureManager;
+		friend class Framebuffer;
+        Texture() = default;
 	public:
         enum class Format
         {
             RGB, RGBA,
             COUNT
         };
+
+        //Texture(const Texture& rhs) { *this = rhs; }
+        //Texture& operator=(Texture const& rhs);
 
         // Texture holds 24-bit colors, so we only have 3 8-bit channels for RGB.
         struct IntColor
@@ -59,6 +64,8 @@ namespace Graphics
 
         // builds the texture and uploads it to the graphics card
         void Build();
+        void ReplaceAndBuild(u8 *pix, u32 width, u32 height, u8 bpp);
+        void ReplaceAndBuild(std::shared_ptr<Texture> rhs);
         bool IsBuilt() const { return m_isBuilt; }
         void DownloadContents(); // downloads pixel data from GPU (bind first)
         bool IsBound() const;
@@ -83,9 +90,8 @@ namespace Graphics
 
         // Color's alpha value ignored if this is a RGB texture.
         void SetPixel(u32 x, u32 y, IntColor const& color);
-
-        static std::shared_ptr<Texture> LoadTGA(std::string const &path);
-        static std::shared_ptr<Texture> LoadPNG(std::string const &path);
+        void Bind(u8 slot);
+        static std::shared_ptr<Texture> LoadFromFile(std::string const &path);
         static void SavePNG(std::shared_ptr<Texture> const &texture,
             std::string const &path);
         static void SavePNG(Texture const *texture, std::string const &path);
@@ -94,12 +100,12 @@ namespace Graphics
         void SetTextureName(std::string const& name) { m_textureName = name; }
 
     private:
-        u8 *m_pixels;
-        u32 m_width;
-        u32 m_height;
-        u32 m_textureHandle;
-        int m_boundSlot;
-        u8 m_bpp;
+        u8 *m_pixels = nullptr;
+        u32 m_width = 0;
+        u32 m_height = 0;
+        u32 m_textureHandle = 0;
+        int m_boundSlot = -1;
+        u8 m_bpp = 3;
         Format m_format;
         std::string m_textureName;
         bool m_isBuilt = false;

@@ -74,6 +74,7 @@ void SetLightEditor(Component::Light* light)
     TwAddVarCB(editorCache, nullptr, TW_TYPE_BOOLCPP, TwCallBack::SetLightEnable, TwCallBack::GetLightEnable, light, (defStr + " label=Enabled").c_str());
     TwAddVarCB(editorCache, nullptr, lightTypeEnumType, TwCallBack::SetLightType, TwCallBack::GetLightType, light, (defStr + " label='Light Type'").c_str());
     TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->intensity, (defStr + " label=Intensity step=0.01 min=0").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->radius, (defStr + " label=Radius step=0.01 min=0").c_str());
     //bug if (lightType == Graphics::LightType::Directional)
     {
         TwAddVarRW(editorCache, nullptr, TW_TYPE_DIR3F, &light->GetLightAttribute()->direction, (defStr + " label=Direction").c_str());

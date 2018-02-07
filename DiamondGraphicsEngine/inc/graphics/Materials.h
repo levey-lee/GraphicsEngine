@@ -121,7 +121,7 @@ namespace Graphics
 
         Color m_ambientColor;
         Color m_diffuseColor = Color(1, 1, 1);
-        Color m_specularColor;
+        Color m_specularColor = Color(1.000f, 0.980f, 0.804f);
         Color m_emissiveColor;
 
         f32 m_specularExponent = 1;

@@ -61,6 +61,7 @@ public:
     // caller of Run.
     void Close();
 
+    void SetUpdateFunc(UpdateClientCallBack func) { m_updateCallback = func; }
     void SetOnViewportChanged(ViewportChangedCallBack func) { m_viewportCallback = func; }
     void SetMouseWheelCallback(OnMouseWheelCallBack func) { m_mouseViewCallback = func; }
     void SetMouseButtonDownCallback(OnMouseButtonDownCallBack func) { m_mouseButtonDownCallBack = func; }

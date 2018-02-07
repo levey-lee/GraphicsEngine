@@ -5,6 +5,7 @@
 
 namespace Math
 {
+    struct Vector2;
     struct Vector3;
     struct Matrix4;
   struct Vector4;
@@ -69,6 +70,7 @@ namespace Graphics
     // Sets a uniform Vector4, given a name. This will send all 3 floats of the
     // Vector4 to the GPU.
     void SetUniform(std::string const &name, Math::Vector3 const &vector);
+    void SetUniform(std::string const &name, Math::Vector2 const &vector);
 
     // Sets a uniform Matrix4, given a name. This will send all 16 floats of the
     // Matrix4 to the GPU.

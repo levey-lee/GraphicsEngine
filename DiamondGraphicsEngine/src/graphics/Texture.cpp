@@ -9,7 +9,7 @@
 static u8 const UnbuiltTexture = 0;
 static u8 const UnboundTexture = -1;
 
-// Converts the relative path to a useful relative path (based on the local
+// Converts the relativePath path to a useful relativePath path (based on the local
 // directory of the executable). This assumes ASSET_PATH is correct.
 static std::string GetFilePath(std::string const &relativePath)
 {
@@ -26,7 +26,7 @@ namespace Graphics
         m_bpp(format == Format::RGB ? 3 : 4), m_format(format)
     {
         // fill pixels to black
-        std::memset(m_pixels, 0, width * height * m_bpp * sizeof(u8));
+        std::memset(m_pixels, 0, width * height * sizeof(IntColor));
     }
 
     Texture::Texture(u8 *pixels, u32 width, u32 height, Format format)
@@ -51,24 +51,47 @@ namespace Graphics
 
         // create a new texture
         glGenTextures(1, &m_textureHandle);
-
         // bind the generated texture and upload its image contents to OpenGL
         glBindTexture(GL_TEXTURE_2D, m_textureHandle);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
         glTexImage2D(GL_TEXTURE_2D, 0, format, m_width, m_height, 0, format, GL_UNSIGNED_BYTE, m_pixels);
 
         // unbind the texture
         glBindTexture(GL_TEXTURE_2D, 0);
-#ifdef _DEBUG
-		CheckGL();
-#endif // _DEBUG
         m_isBuilt = true;
+    }
+
+    void Texture::ReplaceAndBuild(u8* pix, u32 width, u32 height, u8 bpp)
+    {
+        Destroy();
+        delete[] m_pixels;
+
+        m_pixels = new u8[width * height * bpp * sizeof u8];
+        std::memcpy(m_pixels, pix, width * height * bpp * sizeof u8);
+        m_bpp = bpp;
+        m_width = width;
+        m_height = height;
+        Build();
+    }
+
+    void Texture::ReplaceAndBuild(std::shared_ptr<Texture> rhs)
+    {
+        Destroy();
+        delete[] m_pixels;
+
+        m_pixels = new u8[rhs->m_width * rhs->m_height *  rhs->m_bpp * sizeof u8]();
+        std::memcpy(m_pixels, rhs->m_pixels, rhs->m_width * rhs->m_height * rhs->m_bpp * sizeof u8);
+        m_bpp = rhs->m_bpp;
+        m_format = rhs->m_format;
+        m_width = rhs->m_width;
+        m_height = rhs->m_height;
+        m_textureName = rhs->m_textureName;
+        Build();
+
     }
 
     void Texture::DownloadContents()
@@ -147,30 +170,38 @@ namespace Graphics
             *(channels + 3) = color.a;
     }
 
+    void Texture::Bind(u8 slot)
+    {
+        // Enable the texture unit given the specified slot, then bind this texture
+        // as the 2D texture for that slot.
+
+        WarnIf(m_textureHandle == UnbuiltTexture,
+            "Warning: Cannot bind unbuilt texture.");
+        WarnIf(m_boundSlot != UnboundTexture,
+            "Warning: Cannot rebind texture until it is unbound.");
+        glActiveTexture(GL_TEXTURE0 + slot); // bind texture to slot
+        glBindTexture(GL_TEXTURE_2D, m_textureHandle);
+        m_boundSlot = slot;
+    }
+
     Texture::IntColor* Texture::GetPixel(u32 x, u32 y)
     {
         size_t offset = ((y * m_width) + x) * m_bpp;
         return reinterpret_cast<IntColor *>(m_pixels + offset);
     }
-
-    std::shared_ptr<Texture> Texture::LoadTGA(std::string const &path)
+    
+    std::shared_ptr<Texture> Texture::LoadFromFile(std::string const &relativePath)
     {
-        // STB image handles the type based on the format itself
-        return LoadPNG(path);
-    }
-
-    std::shared_ptr<Texture> Texture::LoadPNG(std::string const &relative)
-    {
-        // convert relative path (to textures) to a fully qualified relative path
-        // (relative to the executable itself)
-        std::string path = GetFilePath(relative);
+        // convert relativePath path (to textures) to a fully qualified relativePath path
+        // (relativePath to the executable itself)
+        std::string path = GetFilePath(relativePath);
 
         // attempt to load a PNG/TGA file using STB Image
         int width = 0, height = 0, bpp = 0;
         void *data = stbi_load(path.c_str(), &width, &height, &bpp, STBI_rgb);
 
         Assert(data, "Error: Unable to read file: textures/%s, reason: %s",
-            relative.c_str(), stbi_failure_reason());
+            relativePath.c_str(), stbi_failure_reason());
         if (!data)
             return nullptr; // failed to load
 

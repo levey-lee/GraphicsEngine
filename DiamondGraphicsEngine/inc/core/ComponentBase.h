@@ -26,7 +26,29 @@ public:
     char const* what() const override { return m_msg.c_str(); }
 };
 
+/*******************************************************
+ * @brief This is a component editor interface. ComponenetBase
+ * is derived from this class so that each component can access
+ * and have its own place in the component editor.
+ * For components that need to appear in the editor, their name must be
+ * registered by calling REGISTER_EDITOR_COMPONENT(ClassType)
+ *******************************************************/
+class ComponentEditorInterface
+{
+public:
+    virtual ~ComponentEditorInterface() = 0{}
 
+    /*******************************************************
+    * @brief Get component name, must be registered. Used by editor.
+    * @return Registered component name.
+    *******************************************************/
+    virtual std::string GetComponentTypeName() { Warning("Calling base function to get component name since component is not registered."); return { "Unknown Component" }; }
+    /*******************************************************
+    * @brief Implement this function if you wish the component
+    * appear in Component Editor.
+    *******************************************************/
+    virtual void Reflect(TwBar*, std::string const& /*barName*/, std::string const& /*groupName*/, Graphics::GraphicsEngine*) {}
+};
 /***********************************************************
  * @brief Common component interface. The very base level
  * of a component inheritance structure.
@@ -63,17 +85,6 @@ public:
     virtual void SetEnabled(bool){}
     virtual bool IsEnabled() { return false; }
 
-    /*******************************************************
-     * @brief Get component name, must be registered. Used by editor.
-     * @return Registered component name.
-     *******************************************************/
-    virtual std::string GetComponentTypeName(){ Warning("Calling base function to get component name since component is not registered."); return {"Unknown Component"}; }
-    /*******************************************************
-	 * @brief Implement this function if you wish the component
-	 * appear in Component Editor.
-	 *******************************************************/
-	virtual void Reflect(TwBar*, std::string const& /*barName*/, std::string const& /*groupName*/, Graphics::GraphicsEngine*){}
-
 protected:
     virtual void OnEnable() {}
     virtual void OnDisable() {}
@@ -91,6 +102,7 @@ protected:
 template <typename TComp, bool ifShaded>
 class ComponentBase
     : public ComponentInterface
+    , public ComponentEditorInterface
 {
     friend class Object;
 public:
@@ -153,10 +165,14 @@ protected:
 	unsigned m_updateCounter = m_updateFrameGap;
 private:
 
+    /*******************************************************
+     * @brief This is the most interesting part of the architecture.
+     * The compiler will generate a container specifically for this
+     * component type. 
+     *******************************************************/
     static ComponentPool<TComp> m_componentPool;
 
     void AssignOwner(Object* owner);
-
 };
 //=============================================================================
 ///////////////////////////////////////////////////////////////////////////////

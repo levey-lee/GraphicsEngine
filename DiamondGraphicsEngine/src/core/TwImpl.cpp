@@ -8,6 +8,8 @@
 #include "graphics/Materials.h"
 #include "graphics/GraphicsEngine.h"
 #include "framework/Application.h"
+#include "graphics/FramebufferManager.h"
+#include "graphics/Framebuffer.h"
 
 namespace
 {
@@ -108,11 +110,31 @@ namespace
             *static_cast<Graphics::Color *>(value) = graphics->GetBackgroundColor();
         }
     }
+    void TW_CALL OutputDeferredBuffers(void *)
+    {
+#if DEFERRED_SHADING_TEST
+        std::shared_ptr<Graphics::FramebufferManager> fboManager = graphics->GetFrameBufferManager();
+        for (u8 i = 0; i < 4; i++)
+        {
+            std::shared_ptr<Graphics::Texture> renderedTexture = fboManager->GetFramebuffer(Graphics::FramebufferType::DeferredGBuffer)->GetFboColorAttachment(i);
+            renderedTexture->Bind(0);
+            renderedTexture->DownloadContents();
+            renderedTexture->Unbind();
+            renderedTexture->SavePNG(renderedTexture, std::string("Buffer") + std::to_string(i) + ".png");
+        }
+#endif //DEFERRED_SHADING_TEST
+    }
+
     void ResetResource()
     {
         TwRemoveAllVars(resourceBar);
-        TwAddButton(resourceBar, nullptr, nullptr, nullptr, "label='Graphics'");
+        TwAddButton(resourceBar, nullptr, nullptr, nullptr, "label='Rendering'");        
+        TwAddButton(resourceBar, nullptr, OutputDeferredBuffers, nullptr, "label='Output Buffer Textures'");
+        TwType deferredRenderType = TwDefineEnumFromString(nullptr, "Combined, Diffuse Color, World Position, World Normal, Specular Color, Depth");
+        TwAddVarRW(resourceBar, nullptr, deferredRenderType, &graphics->DeferredRenderDebugOutputIndex, "label='Deferred Output'");
+
         TwAddVarCB(resourceBar, nullptr, TW_TYPE_COLOR3F, SetBackgroundColor, GetBackgroundColor, nullptr, "label='Background Color'");
+        TwAddSeparator(resourceBar, nullptr, nullptr);
         TwAddButton(resourceBar, nullptr, nullptr, nullptr, "label='Textures'");
         if (textures.empty() == false)
         {

@@ -27,8 +27,8 @@ struct Vector2
   Vector2() {};
   Vector2(float x, float y);
   explicit Vector2(ConstRealPointer data);
-
-  float* ToFloats();
+  
+  float const *ToFloats() const;
 
   float& operator[](unsigned index);
   float operator[](unsigned index) const;

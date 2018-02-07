@@ -14,16 +14,6 @@ namespace Graphics
     }
 
 
-    TriangleMesh::TriangleMesh()
-        : m_vertices(), m_triangles(), m_triangleNormals()
-    {
-    }
-
-
-    TriangleMesh::~TriangleMesh()
-    {
-    }
-
 
     void TriangleMesh::AddVertex(f32 x, f32 y, f32 z)
     {
@@ -81,25 +71,24 @@ namespace Graphics
         m_isBuilt = true;
     }
 
-    void TriangleMesh::Preprocess()
+    void TriangleMesh::Preprocess(DefaultUvType defaultUvType)
     {
         // various useful steps for preparing this model for rendering; none of
         // these would be done for a game
         centerMesh();
         normalizeVertices();
         CalculateBoundingSphere();
-
         //TODO(Assignment 1): Calculate all the information a vertex needs
         //You should firstly calculate face normal and store them in m_triangleNormals
         //then you average adjacent face normals to get vertex normal then store it in 
         //each corresponding vertex.
 #if SAMPLE_IMPLEMENTATION
 
-        std::vector<std::vector<unsigned>> adjList;
+        std::vector<std::vector<unsigned> > adjList;
         adjList.resize(this->GetVertexCount());
 
-        this->m_triangleNormals.clear();
-        for (int i = 0, j = this->GetPrimitiveCount(); i < j; ++i)
+        m_triangleNormals.clear();
+        for (int i = 0, j = m_triangles.size(); i < j; ++i)
         {
             TriangleFace& tri = m_triangles[i];
 
@@ -111,12 +100,11 @@ namespace Graphics
                 m_vertices[tri.c].position - m_vertices[tri.a].position);
             m_triangleNormals.push_back(n);
         }
-        //todo add more such as tan and bitan
+
         for (unsigned i = 0, j = adjList.size(); i < j; ++i)
         {
             Math::Vector3 sum(0, 0, 0);
-            Math::Vector3 tSum(0, 0, 0);
-            Math::Vector3 btSum(0, 0, 0);
+
             for (unsigned v = 0; v < adjList[i].size(); ++v)
             {
                 bool addVec = true;
@@ -132,21 +120,30 @@ namespace Graphics
                 if (addVec)
                 {
                     sum += m_triangleNormals[adjList[i][v]];
-                    tSum += m_triangleNormals[adjList[i][v]];
-                    btSum += m_triangleNormals[adjList[i][v]];
                 }
             }
             m_vertices[i].normal = sum.Normalized();
-            //m_vertices[i].tangent = tSum.Normalized();
-            //m_vertices[i].bitangent = btSum.Normalized();
         }
-
-#endif // 0
+#endif // SAMPLE_IMPLEMENTATION
 
         for (auto& i : m_triangleNormals)
         {
             i.AttemptNormalize();
         }
+        //calculate UV and tangents
+        switch (defaultUvType)
+        {
+        case DefaultUvType::None:
+            break;
+        case Graphics::DefaultUvType::Box:
+            CalcUvBox();
+            break;
+        case Graphics::DefaultUvType::Spherical:
+        default:
+            CalcUvSpherical();
+            break;
+        }
+        CalcTanBitan();
     }
 
 
@@ -253,6 +250,8 @@ namespace Graphics
             sizeof Vertex::position,
             sizeof Vertex::normal,
             sizeof Vertex::uv,
+            sizeof Vertex::tangent,
+            sizeof Vertex::bitangent
         };
 
 #ifdef _DEBUG
@@ -264,7 +263,7 @@ namespace Graphics
 
     std::vector<size_t> TriangleMesh::GetAttributeElementCounts()
     {
-        std::vector<size_t> eleCounts = { 3,3, 2 };
+        std::vector<size_t> eleCounts = { 3,3, 2, 3, 3 };
         return eleCounts;
     }
 
@@ -392,6 +391,84 @@ namespace Graphics
                 i.uv.y = biasUVs.y;
             }
         }
+        return this;
+    }
+
+    TriangleMesh* TriangleMesh::CalcTanBitan()
+    {
+#if SAMPLE_IMPLEMENTATION
+
+        //calculate face tangent and bitangent
+        for (auto& i : m_triangles)
+        {
+            Vertex & v0 = m_vertices[i.a];
+            Vertex & v1 = m_vertices[i.b];
+            Vertex & v2 = m_vertices[i.c];
+
+            Vector3 & p0 = v0.position;
+            Vector3 & p1 = v1.position;
+            Vector3 & p2 = v2.position;
+
+            Vector2 & uv0 = v0.uv;
+            Vector2 & uv1 = v1.uv;
+            Vector2 & uv2 = v2.uv;
+
+            Vector3 deltaPos1 = p1 - p0;
+            Vector3 deltaPos2 = p2 - p0;
+
+            Vector2 deltaUV1 = uv1 - uv0;
+            Vector2 deltaUV2 = uv2 - uv0;
+
+            float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+            Vector3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
+            Vector3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x)*r;
+
+            m_tangent.push_back(tangent);
+            m_bitangent.push_back(bitangent);
+        }
+
+        std::vector<std::pair<size_t, size_t> >tans;
+        std::vector<std::pair<size_t, size_t> >bitans;
+        for (size_t i = 0; i < m_vertices.size(); ++i)
+        {
+            tans.emplace_back(i, 0);
+            bitans.emplace_back(i, 0);
+        }
+
+        //add face tangent and bitangent to vertices
+        int index = 0;
+        for (auto& i : m_triangles)
+        {
+            Vertex & v0 = m_vertices[i.a];
+            Vertex & v1 = m_vertices[i.b];
+            Vertex & v2 = m_vertices[i.c];
+            
+            ++tans[i.a].second;
+            ++tans[i.b].second;
+            ++tans[i.c].second;
+            v0.tangent += m_tangent[index];
+            v1.tangent += m_tangent[index];
+            v2.tangent += m_tangent[index];
+
+            ++bitans[i.a].second;
+            ++bitans[i.b].second;
+            ++bitans[i.c].second;
+            v0.bitangent += m_bitangent[index];
+            v1.bitangent += m_bitangent[index];
+            v2.bitangent += m_bitangent[index];
+            
+            ++index;
+        }
+
+        //average vertex tangent and bitangent
+        for (size_t i = 0; i < m_vertices.size();++i)
+        {
+           m_vertices[ tans[i].first ].tangent /= static_cast<float>(tans[i].second);
+           m_vertices[bitans[i].first].bitangent /= static_cast<float>(bitans[i].second);
+        }
+#endif // SAMPLE_IMPLEMENTATION
+
+
         return this;
     }
 }

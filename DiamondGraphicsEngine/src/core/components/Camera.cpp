@@ -198,7 +198,7 @@ namespace Component
         return GetViewVector();
     }
 
-    Math::Vector3 Camera::GetCameraWorldPosition() const
+    Math::Vector3 Camera::GetCameraWorldPosition() 
     {
         return m_position + m_transform.GetPosition();
     }
