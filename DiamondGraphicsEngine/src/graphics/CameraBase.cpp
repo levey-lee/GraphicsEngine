@@ -1,5 +1,6 @@
 #include "Precompiled.h"
 #include "graphics/CameraBase.h"
+#include "graphics/ShaderProgram.h"
 
 namespace Graphics
 {
@@ -39,9 +40,14 @@ namespace Graphics
         m_upVec = upVec;
     }
 
-    void CameraBase::SetCameraUniforms(std::shared_ptr<ShaderProgram> shader)
-	{//TODO(STUDENT): Set camera attributes to shader such as view vector,
+    void CameraBase::SetCameraUniforms(std::shared_ptr<ShaderProgram> program)
+	{
      //camera position, fog, or anything global for all vertices.
+        program->SetUniform("Camera.ViewDir_world", GetViewVector());
+        program->SetUniform("Camera.Position_world", GetCameraWorldPosition());
+        program->SetUniform("Camera.FarPlaneDist", GetFarPlaneDistance());
+        program->SetUniform("Camera.NearPlaneDist", GetNearPlaneDistance());
+        program->SetUniform("Camera.FogColor", GetFogColor());
 	}
 
     void CameraBase::SetViewMatrix(Math::Matrix4 const& mat)
@@ -103,6 +109,11 @@ namespace Graphics
     {
         m_height = h;
         OnCameraViewportChanged();
+    }
+
+    void CameraBase::SetFogColor(Color const& color)
+    {
+        m_fogColor = color;
     }
 
     void CameraBase::SetNearPlaneDistance(float zNear)

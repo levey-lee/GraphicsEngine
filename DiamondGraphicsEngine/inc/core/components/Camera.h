@@ -26,7 +26,6 @@ namespace Component
         /// Component methods
         void Start() override;
         void Update(float dt) override;
-        void StaticUpdate(float dt) { std::cout << "Camera Static Update\n"; }
         void Disable() override;
 
 

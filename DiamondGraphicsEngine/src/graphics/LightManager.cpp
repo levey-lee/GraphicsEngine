@@ -2,41 +2,42 @@
 #include "graphics/LightManager.h"
 #include "graphics/ShaderProgram.h"
 
+
+
 namespace Graphics
 {
     std::list<LightAttribute> LightManager::m_lightAttribtues;
 
 
-    void LightAttribute::SetLightUniform(int index ,std::shared_ptr<ShaderProgram> shader) const
+    void LightAttribute::SetLightUniform(int index ,std::shared_ptr<ShaderProgram> program) const
     {
-		//TODO(STUDENT): Set light attributes needed to render.
         std::stringstream str;
         str << "Lights[" << index << "].";
         //colors
-        shader->SetUniform(str.str() + "ambient", ambientColor);
-        shader->SetUniform(str.str() + "diffuse", diffuseColor);
-        shader->SetUniform(str.str() + "specular", specularColor);
+        program->SetUniform(str.str() + "ambient", ambientColor);
+        program->SetUniform(str.str() + "diffuse", diffuseColor);
+        program->SetUniform(str.str() + "specular", specularColor);
         //other attribute
-        shader->SetUniform(str.str() + "isActive",isActive);
-        shader->SetUniform(str.str() + "direction", direction);
-        shader->SetUniform(str.str() + "type", static_cast<int>(type));
-        shader->SetUniform(str.str() + "intensity", intensity);
+        program->SetUniform(str.str() + "isActive",isActive);
+        program->SetUniform(str.str() + "direction", direction);
+        program->SetUniform(str.str() + "type", static_cast<int>(type));
+        program->SetUniform(str.str() + "intensity", intensity);
         if (ifDecay)
         {
-            shader->SetUniform(str.str() + "distanceAttenuation", disAtten);
+            program->SetUniform(str.str() + "distanceAttenuation", disAtten);
         }        
         switch (type)
         {
         case LightType::Directional:
             break;
         case LightType::Point:
-            shader->SetUniform(str.str() + "position", position);
+            program->SetUniform(str.str() + "position", position);
             break;
         case LightType::Spot:
-            shader->SetUniform(str.str() + "position", position);
-            //TODO(STUDENT): Set innerAngle
-            //TODO(STUDENT): Set outerAngle
-            //TODO(STUDENT): Set spotlightFallOff
+            program->SetUniform(str.str() + "position", position);
+            program->SetUniform(str.str() + "innerAngle", innerAngle);
+            program->SetUniform(str.str() + "outerAngle", outerAngle);
+            program->SetUniform(str.str() + "spotFalloff", spotFalloff);
             break;
         default:
             break;

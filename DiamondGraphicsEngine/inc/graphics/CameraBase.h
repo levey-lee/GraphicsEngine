@@ -1,5 +1,6 @@
 #pragma once
 #include "math/Matrix4.h"
+#include "graphics/Color.h"
 
 namespace Graphics
 {
@@ -28,7 +29,7 @@ namespace Graphics
         virtual Math::Matrix4 const& GetProjMatrix() { return m_projMatrix; }
         virtual Math::Matrix4 const& GetViewProjMatrix() { return m_viewProjMatrix; }
         
-		virtual void SetCameraUniforms(std::shared_ptr<ShaderProgram> shader);
+		virtual void SetCameraUniforms(std::shared_ptr<ShaderProgram> program);
 
         virtual void SetViewMatrix(Math::Matrix4 const& mat);
         virtual void SetProjMatrix(Math::Matrix4 const& mat);
@@ -51,6 +52,9 @@ namespace Graphics
 
         virtual float GetHeight() { return m_height; }
         virtual void SetHeight(float h);
+
+        virtual Color GetFogColor() { return m_fogColor; }
+        virtual void SetFogColor(Color const& color);
 
         virtual float GetNearPlaneDistance() { return m_nearPlaneDist; }
         virtual void SetNearPlaneDistance(float zNear);
@@ -77,8 +81,9 @@ namespace Graphics
         float m_fieldOfView = Math::c_Pi/3.0f;
         float m_width = 160.0f;
         float m_height = 90.0f;
-        float m_nearPlaneDist = 1.0f;
+        float m_nearPlaneDist = 0.1f;
         float m_farPlaneDist = 1000.0f;
+        Color m_fogColor = Color::Gray;
 
         Math::Vector3 m_viewVec = DefaultViewDirection;
         Math::Vector3 m_upVec = DefaultUpDirection;

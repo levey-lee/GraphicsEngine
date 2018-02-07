@@ -41,8 +41,12 @@ namespace Graphics
         emplaceMaterial("Skydome", skyboxMat);
 
         //plane
-        std::shared_ptr<Material> planeMesh = std::make_shared<Material>(*btr80AMat);
-        emplaceMaterial("Plane", planeMesh);
+        std::shared_ptr<Material> planeMat = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("Plane", planeMat);
+
+        //plane
+        std::shared_ptr<Material> golfMat = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("Golf", golfMat);
 
 
         std::shared_ptr<TextureManager> textureManager = g->GetTextureManager();

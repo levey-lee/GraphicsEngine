@@ -27,7 +27,7 @@ namespace Graphics
         bool castShadow = false;
         //this will be written by light component
         Math::Vector4 position = Math::Vector4( 0,0,0,1 );
-        Math::Vector4 direction = Math::Vector4( 0,0, -1,0 );
+        Math::Vector4 direction = Math::Vector4(0, 0, -1, 0);
         LightType type = LightType::Directional;
         float intensity = 1.0f;
         float radius = 10.0f;
@@ -41,7 +41,7 @@ namespace Graphics
         Color ambientColor =  Color(0, 0, 0);
         Color specularColor = Color(0, 0, 0);
 
-        void SetLightUniform(int index ,std::shared_ptr<ShaderProgram> shader) const;
+        void SetLightUniform(int index ,std::shared_ptr<ShaderProgram> program) const;
     };
     
     class LightBase

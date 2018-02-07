@@ -77,7 +77,8 @@ void Initialize(Application* app, void* /*userdata*/)
         { "sphereReversed", "sphereReversed.obj" , DefaultUvType::Spherical },
         { "teapot" ,        "teapot.obj" , DefaultUvType::Box },
         { "cube" ,          "cube.obj" , DefaultUvType::Box },
-        { "plane" ,          "plane_low_poly.obj" , DefaultUvType::Box },
+        { "plane" ,         "plane_low_poly.obj" , DefaultUvType::Box },
+        { "horse" ,         "horse_high_poly.obj" , DefaultUvType::Box },
     });
 
     std::shared_ptr<Mesh> spongeMesh = meshManager->GetMesh("sponge");
@@ -91,6 +92,7 @@ void Initialize(Application* app, void* /*userdata*/)
     std::shared_ptr<Mesh> cube = meshManager->GetMesh("cube");
     //--------------------------------------
     std::shared_ptr<Mesh> planeMesh = meshManager->GetMesh("plane");
+    //--------------------------------------
 
     //------------------------------------------------------------------------------
     std::shared_ptr<TriangleMesh> triangleMesh = meshManager->TriangleMeshHandler.BuildTriangle("SampleTriangle");
@@ -100,6 +102,10 @@ void Initialize(Application* app, void* /*userdata*/)
     //------------------------------------------------------------------------------
     std::shared_ptr<TriangleMesh> bTR80AMesh = meshManager->TriangleMeshHandler.LoadObjMeshWithUvNormal("BTR80A","BTR80A.obj");
     bTR80AMesh->Build();
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    std::shared_ptr<TriangleMesh> golfMesh = meshManager->TriangleMeshHandler.LoadObjMeshWithUvNormal("Golf","golfball_high_poly.obj");
+    golfMesh->CalcUvSpherical()->Build();
     //------------------------------------------------------------------------------
 
     ////////////////////////////////////////////////////////////////////////////
@@ -136,8 +142,13 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& plane = g_MainScene.CreateObject(usingShader);
         plane.AddComponent<Renderer>(materialManager->GetMaterial("Plane"), planeMesh);
-        plane.GetComponentRef<Component::Transform>().SetPosition({ 0,-2,-5 }).SetScale(0.02f).SetRotation({ 0,0,0 });
+        plane.GetComponentRef<Component::Transform>().SetPosition({ 0,-2,-5 }).SetScale({ 1,1,10.02f }).SetRotation({ 0,0,0 });
         plane.SetName("Plane");
+
+        Object& golfBall = g_MainScene.CreateObject(usingShader);
+        golfBall.AddComponent<Renderer>(materialManager->GetMaterial("Golf"), golfMesh);
+        golfBall.GetComponentRef<Component::Transform>().SetPosition({ 1,0,-5 }).SetScale(1).SetRotation({ 0,0,0 });
+        golfBall.SetName("Golf");
         
         ///////////////////////////////////////////////////
         ///////////////////////////////////////////////////
@@ -146,11 +157,12 @@ void Initialize(Application* app, void* /*userdata*/)
         Component::Transform& camtrans = camObj.GetComponentRef<Component::Transform>();
         camtrans.SetPosition({ 0,1.75f, 2});
         camtrans.SetRotation({ 0,0,0 });
-        camtrans.SetScale(500.0f);
+        camtrans.SetScale(1000.0f);
         camObj.AddComponent<Light>()
             .SetLightType(LightType::Directional)
             ->SetDirection({ 1,-1,-1 })
-            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
+            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
+            ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f));
         camObj.AddComponent<Camera>(camtrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
         camObj.AddComponent<Skydome>(materialManager->GetMaterial("Skydome"), sphereReversedMesh);
         camObj.SetName("Camera");

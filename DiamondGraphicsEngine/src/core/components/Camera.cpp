@@ -90,6 +90,18 @@ namespace TwCallBack
             cam->Disable();
         }
     }
+
+    void TW_CALL GetFogColor(void *value, void *clientData)
+    {
+        Component::Camera* cam = static_cast<Component::Camera*>(clientData);
+        *static_cast<Graphics::Color*>(value) = cam->GetFogColor();
+    }
+    void TW_CALL SetFogColor(const void *value, void *clientData)
+    {
+        Component::Camera* cam = static_cast<Component::Camera*>(clientData);
+        cam->SetFogColor(*static_cast<const Graphics::Color*>(value));
+    }
+
 }
 namespace Component
 {
@@ -144,6 +156,7 @@ namespace Component
         TwAddVarCB(editor, nullptr, TW_TYPE_FLOAT, TwCallBack::SetHeight, TwCallBack::GetHeight, this, (defStr+" step=0.1 min=0 label='Viewport Height'").c_str());
         TwAddVarCB(editor, nullptr, TW_TYPE_FLOAT, TwCallBack::SetNearPlane, TwCallBack::GetNearPlane, this, (defStr+" step=0.1 min=0.01 label='Near Plane Distance'").c_str());
         TwAddVarCB(editor, nullptr, TW_TYPE_FLOAT, TwCallBack::SetFarPlane, TwCallBack::GetFarPlane, this, (defStr+" step=0.1 min=0.01 label='Far Plane Distance'").c_str());
+        TwAddVarCB(editor, nullptr, TW_TYPE_COLOR3F, TwCallBack::SetFogColor, TwCallBack::GetFogColor, this, (defStr+" label='Fog Color'").c_str());
         TwAddVarCB(editor, nullptr, TW_TYPE_DIR3F, TwCallBack::SetViewVec, TwCallBack::GetViewVec, this, (defStr+" label='View Vector'").c_str());
     }
 

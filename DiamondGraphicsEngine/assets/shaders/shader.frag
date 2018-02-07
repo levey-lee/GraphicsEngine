@@ -22,6 +22,9 @@ struct Light
   vec4 direction; // direction the light is directed
   vec4 ambient; // ambient light cast onto objects
   vec4 diffuse; // diffuse light cast onto objects
+  float innerAngle;
+  float outerAngle;
+  float spotFalloff;
   vec4 specular;
   int type;
   float intensity;
@@ -49,38 +52,92 @@ uniform struct
   sampler2D NormalMapTexture;
 } Material;
 
-vec4 computeLightingTerm(in int lightIdx, in vec4 worldNormal, vec2 uv)
+uniform struct
+{
+  vec3 ViewDir_world;
+  vec3 Position_world;
+  float FarPlaneDist;
+  float NearPlaneDist;
+  vec4 FogColor;
+}Camera;
+
+vec4 DoPointLight(in Light light, in vec4 worldNormal)
+{
+  return vec4(0,0,0,1);
+}
+vec4 DoSpotLight(in Light light, in vec4 worldNormal)
+{
+  return vec4(0,0,0,1);
+}
+vec4 DoDirectionalLight(in Light light, in vec4 worldNormal)
+{
+  // light vector points from the surface toward the light (opposite light dir.)
+  vec4 lightVec = normalize(-light.direction);
+  
+  vec4 viewVec = WorldPosition - vec4(Camera.Position_world, 1);
+
+  // ambient contribution from the light is always constant
+  vec4 ambient = light.ambient * Material.AmbientColor;
+  
+  // compute diffuse contribution on the surface
+  vec4 diffuse = max(dot(worldNormal, lightVec), 0) * light.diffuse * Material.DiffuseColor;
+  
+  
+  vec4 specular = light.specular
+                * Material.SpecularColor
+                * pow(max(dot(reflect(lightVec, worldNormal),viewVec),0),Material.SpecularExponent);
+  return light.intensity*(ambient + diffuse + specular); // total contribution from this light
+}
+vec4 computeLightingTerm(in int lightIdx, in vec4 worldNormal)
+{
+  // grab light
+  Light light = Lights[lightIdx];
+  
+  vec4 lightColor = vec4(0,0,0,1);
+  if (light.isActive == false)
+    return vec4(0,0,0,1);
+  ////////////////////////////////////////////////////////
+  //    Calculate Surface Color
+  ////////////////////////////////////////////////////////
+    
+  if(light.type == LIGHT_TYPE_POINT)
+    lightColor = DoPointLight(light, worldNormal);
+    
+        
+  else if(light.type == LIGHT_TYPE_SPOT)
+    lightColor = DoSpotLight(light, worldNormal);
+    
+        
+  else if(light.type == LIGHT_TYPE_DIRECTIONAL)
+    lightColor = DoDirectionalLight(light, worldNormal);
+  
+  ////////////////////////////////////////////////////////
+  //    Calculate Fog Color
+  ////////////////////////////////////////////////////////
+  
+  vec4 viewVec = WorldPosition - vec4(Camera.Position_world, 1);
+  float fogFactor = (Camera.FarPlaneDist - length(viewVec))/(Camera.FarPlaneDist - Camera.NearPlaneDist);
+  lightColor = fogFactor*lightColor + (1-fogFactor)*Camera.FogColor;
+    
+  
+  ////////////////////////////////////////////////////////
+  //    Return the final surface color
+  ////////////////////////////////////////////////////////
+  return lightColor;
+}
+
+vec4 computeLightColor(in vec4 worldNormal, vec2 uv)
 {
   vec4 normal = worldNormal;
   if (Material.NormalMapTextureEnabled)
   {
     normal= normalize(inverse(TBN) * (vec4(texture(Material.NormalMapTexture, uv).rgb, 0) * 2 - 1));
   }
-  // grab light
-  Light light = Lights[lightIdx];
-
-  if (light.isActive == false)
-    return vec4(0,0,0,1);
-    
-  // light vector points from the surface toward the light (opposite light dir.)
-  vec4 lightVec = (light.type == LIGHT_TYPE_POINT)? normalize(light.position - WorldPosition): normalize(-light.direction);
-
-  // ambient contribution from the light is always constant
-  vec4 ambient = light.ambient * Material.AmbientColor;
-  
-  // compute diffuse contribution on the surface
-  vec4 diffuse = max(dot(normal, lightVec), 0) * light.diffuse * Material.DiffuseColor;
-  
-  return ambient + diffuse + Material.EmissiveColor; // total contribution from this light
-}
-
-vec4 computeSurfaceColor(in vec4 worldNormal, vec2 uv)
-{
   // Phong: total contribution of light is sum of all individual light contribs.
   vec4 color = vec4(0, 0, 0, 0); // no light = black
   for (int i = 0; i < LightCount; ++i)
-    color += computeLightingTerm(i, worldNormal, uv); // contribution of light i
-  return color; // contribution from all lights onto surface
+    color += computeLightingTerm(i, normal); // contribution of light i
+  return color + Material.EmissiveColor; // contribution from all lights onto surface
 }
 
 
@@ -88,18 +145,18 @@ void main()
 {
   vec4 lightColor;
   vec4 textureColor;
-  vec4 materialColor = Material.AmbientColor+Material.DiffuseColor+Material.EmissiveColor;
   vec2 uv;
   uv.x = ( fwidth( Uv0.x ) < fwidth( Uv1.x )-0.001f )? Uv0.x : Uv1.x; 
   uv.y = ( fwidth( Uv0.y ) < fwidth( Uv1.y )-0.001f )? Uv0.y : Uv1.y;
   
-  lightColor = Material.ReceiveLight ? computeSurfaceColor(WorldNormal, uv) : materialColor;
-  textureColor = Material.DiffuseTextureEnabled ? texture(Material.DiffuseTexture, uv) : materialColor;
+  lightColor = Material.ReceiveLight ? computeLightColor(WorldNormal, uv) : vec4(1,1,1,1);
+  textureColor = Material.DiffuseTextureEnabled ? texture(Material.DiffuseTexture, uv) : vec4(1,1,1,1);
   //for now I use specular texture as a diffuse texture so 
   //that you can see they blend.
   //multiplicative blending.
-  if (Material.SpecularTextureEnabled)
-    textureColor*=texture(Material.SpecularTexture, uv).x;
+  // if (Material.SpecularTextureEnabled)
+    // textureColor*=texture(Material.SpecularTexture, uv).x;
     
   vFragColor = vec4(lightColor*textureColor).rgba;
+  
 }

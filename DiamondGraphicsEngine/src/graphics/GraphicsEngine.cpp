@@ -30,6 +30,7 @@ namespace Graphics
 
         SetBackgroundColor(Color(0.1f,0.1f,0.1f));
         EnableDepthTest();
+        glCullFace(GL_BACK);
     }
 
     void GraphicsEngine::RenderScene(Scene* scene)
