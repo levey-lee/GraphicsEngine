@@ -197,6 +197,7 @@ typedef Vector4   CrossVector;
         const Vector4& operator[](unsigned index) const { return ((Vector4*)this)[index]; }
 
         static Matrix4 CreateProjection(float FOV, float width, float height, float zNear, float zFar);
+        static Matrix4 CreateOrthographic(float width, float height, float zNear, float zFar);
 
         union
         {
@@ -215,7 +216,7 @@ typedef Vector4   CrossVector;
 #endif
             };
 
-            float m[4][4];
+            float m[4][4]{};
             float array[16];
         };
 

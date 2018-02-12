@@ -56,10 +56,25 @@ void Component::Transform::SetShaderParams(std::shared_ptr<Graphics::ShaderProgr
     std::shared_ptr<Graphics::ShaderManager> shaderManager = graphics->GetShaderManager();
     ////////////////////////////////////////////////////////////////////////////
     //  set transform
-    Math::Matrix4 const& modelMatrix = GetWorldTransform();
-    Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
-    shader->SetUniform("ModelMatrix", modelMatrix);
-    shader->SetUniform("ModelViewProjectionMatrix", mvp);
+    Graphics::ShaderUsage shaderUsage = shader->GetUsage();
+    if (shaderUsage == Graphics::ShaderUsage::Regular)
+    {
+        Math::Matrix4 const& modelMatrix = GetWorldTransform();
+        Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
+        shader->SetUniform("ModelMatrix", modelMatrix);
+        shader->SetUniform("ModelViewProjectionMatrix", mvp);
+    }
+    else if (shaderUsage == Graphics::ShaderUsage::LightShadowMap)
+    {
+        //todo shadow map, uncomment
+        //auto viewProj = graphics->GetLightViewProj();
+        //auto worldTrans = GetWorldTransform();
+        //Math::Matrix4 mvp = viewProj  *worldTrans;
+        //shader->SetUniform("ModelViewProjectionMatrix", mvp);
+        Math::Matrix4 const& modelMatrix = GetWorldTransform();
+        Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
+        shader->SetUniform("ModelViewProjectionMatrix", mvp);
+    }
 }
 
 Component::Transform& Component::Transform::Translate(Math::Vector3 const& trans)

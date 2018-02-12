@@ -27,6 +27,10 @@
 #include "graphics/Texture.h"
 #include "graphics/FramebufferManager.h"
 #include "graphics/Framebuffer.h"
+#include "graphics/ShaderProgram.h"
+#ifdef _WIN32
+#include <Windows.h>//for raw input so we can have a better camera control
+#endif // _WIN32
 
 static const unsigned c_DefaultWindowWidth = 1280;
 static const unsigned c_DefaultWindowHeight = 760;
@@ -63,6 +67,7 @@ void Initialize(Application* app, void* /*userdata*/)
 
     std::shared_ptr<FramebufferManager> fboManager = g_Graphics->GetFrameBufferManager();
     fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build();
+    fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -115,9 +120,9 @@ void Initialize(Application* app, void* /*userdata*/)
     ShaderType usingShader = ShaderType::UberDeferred;
     shaderManager->LoadShader(usingShader,
     {
-        { "DeferredStage0.vert", "DeferredStage0.frag" },
-        //{ "DeferredStage1.vert", "DeferredStage1.frag" },
-        { "DeferredStage2.vert", "DeferredStage2.frag" }
+        { "DeferredStage0.vert", "DeferredStage0.frag", ShaderUsage::Regular },
+        { "DeferredStage1.vert", "DeferredStage1.frag" , ShaderUsage::LightShadowMap },
+        { "DeferredStage2.vert", "DeferredStage2.frag", ShaderUsage::Regular }
     });
 #else
     ShaderType usingShader = ShaderType::UberForward;
@@ -158,20 +163,32 @@ void Initialize(Application* app, void* /*userdata*/)
         camtrans.SetPosition({ 0,1.75f, 2});
         camtrans.SetRotation({ 0,0,0 });
         camtrans.SetScale(1000.0f);
-        camObj.AddComponent<Light>()
-            .SetLightType(LightType::Directional)
-            ->SetDirection({ 1,-1,-1 })
-            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
-            ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f));
         camObj.AddComponent<Camera>(camtrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
         camObj.AddComponent<Skydome>(materialManager->GetMaterial("Skydome"), sphereReversedMesh);
+        camObj.AddComponent<Light>()
+            .SetLightType(LightType::Directional)
+            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
+            ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f))
+            ->SetShadowType(ShadowType::HardShadow);
         camObj.SetName("Camera");
         g_Cam = camObj.GetHandle();
+
+
+        //Object& lightObj = g_MainScene.CreateObject(usingShader);
+        //Component::Transform& lightTrans = lightObj.GetComponentRef<Component::Transform>();
+        //lightTrans.SetPosition({-2, 2, 2}).SetRotation({ 0, -c_Pi / 4.0f, -c_Pi / 4.0f });
+        //lightObj.AddComponent<Light>()
+        //    .SetLightType(LightType::Directional)
+        //    ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
+        //    ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f))
+        //    ->SetShadowType(ShadowType::HardShadow);
+        //lightObj.SetName("Light");
 
     }
     TwEditor::CreateComponentEditor("Object & Component", g_MainScene.GetEditorObjectRef(), g_Graphics);
     TwEditor::CreateResourceEditor("Resource Manager", g_Graphics->GetTextureManager()->GetAllTextures(), materialManager->GetAllMaterials(), g_Graphics);
     
+
     g_MainScene.StartScene();
 }
 
@@ -180,6 +197,60 @@ void Update(Application* /*application*/, float dt, void* /*userdata*/)
 {
     g_MainScene.UpdateScene(dt);
     g_Graphics->RenderScene(&g_MainScene);
+#ifdef _WIN32//for a better keyboard input
+    static const float CameraMoveSpeed = 0.05f;
+    Object& camObj = g_MainScene.GetObjectRef(g_Cam);
+    Component::Camera& cam = camObj.GetComponentRef<Component::Camera>();
+    Component::Transform& camWorldTrans = camObj.GetComponentRef<Component::Transform>();
+    Vector3 const& viewVec = cam.GetViewVector();
+    Vector3 const& upVec = cam.GetUpVector();
+
+    if (GetAsyncKeyState('W') )
+    {
+        camWorldTrans.Translate(viewVec*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('S'))
+    {
+        camWorldTrans.Translate(-viewVec*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('Q'))
+    {
+        Vec3 leftDir = Cross(upVec, viewVec);
+        camWorldTrans.Translate(leftDir*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('E'))
+    {
+        Vec3 rightDir = Cross(viewVec, upVec);
+        camWorldTrans.Translate(rightDir*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('A'))
+    {
+        cam.RotateCameraLocal(upVec*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('D'))
+    {
+        cam.RotateCameraLocal(-upVec*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState(VK_SPACE))
+    {
+        camWorldTrans.Translate(upVec*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState(VK_CONTROL))
+    {
+        camWorldTrans.Translate(-upVec*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('Z'))
+    {
+        Vec3 rightDir = Cross(viewVec, upVec);
+        cam.RotateCameraLocal(rightDir*CameraMoveSpeed);
+    }
+    if (GetAsyncKeyState('X'))
+    {
+        Vec3 leftDir = Cross(upVec, viewVec);
+        cam.RotateCameraLocal(leftDir*CameraMoveSpeed);
+    }
+#endif // _WIN32
+
 	TwDraw();
 }
 
@@ -277,17 +348,11 @@ void OnMouseButtonUp(Application* application, int button, int x, int y)
 {
     if (button == GLUT_RIGHT_BUTTON)
     {
-        Object& camObj = g_MainScene.GetObjectRef(g_Cam);
-        Component::Camera& cam = camObj.GetComponentRef<Component::Camera>();
-        Component::Transform& camWorldTrans = camObj.GetComponentRef<Component::Transform>();
-        Math::Vec3 const& viewVec = cam.GetViewVector();
-        Math::Vec3 const& upVec = cam.GetUpVector();
-
         g_MouseDragEventData.rightMouseDrag = false;
     }
 }
 
-void OnMouseDrag(Application* application, int x, int y)
+void OnMouseDrag(Application* , int x, int y)
 {
     static const float CameraRotateSpeed = 0.05f;
     if (g_MouseDragEventData.rightMouseDrag)
@@ -307,8 +372,9 @@ void OnMouseDrag(Application* application, int x, int y)
         g_MouseDragEventData.mouseDragStartPoint = Vec2(float(x), float(y));
     }
 }
-void SimpleKeyDonwCB(Application* application, unsigned char key, int x, int y)
+void SimpleKeyDonwCB(Application* , unsigned char key, int x, int y)
 {
+#ifndef _WIN32
     static const float CameraMoveSpeed = 0.05f;
     Object& camObj = g_MainScene.GetObjectRef(g_Cam);
     Component::Camera& cam = camObj.GetComponentRef<Component::Camera>();
@@ -350,6 +416,8 @@ void SimpleKeyDonwCB(Application* application, unsigned char key, int x, int y)
     {
         camWorldTrans.Translate(-upVec*CameraMoveSpeed);
     }
+
+#endif // !_WIN32
 
 
 }

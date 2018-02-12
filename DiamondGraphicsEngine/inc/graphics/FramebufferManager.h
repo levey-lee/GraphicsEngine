@@ -17,6 +17,7 @@ namespace Graphics
         // bind the screen framebuffer itself, which is a special OGL state
         Screen = 0,
         DeferredGBuffer,
+        DeferredShadowMap,
         // TODO(student): For Deferred Shader(Assignment 3), add more types here, such as POSITIVE_Z or NEGATIVE_X
 
         COUNT

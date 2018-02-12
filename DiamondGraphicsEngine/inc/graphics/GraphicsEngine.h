@@ -2,6 +2,7 @@
 #include "graphics/Color.h"
 #include "graphics/Shader.h"
 #include "core/Object.h"
+#include "math/Matrix4.h"
 
 class ComponentInterface;
 class Scene;
@@ -42,7 +43,14 @@ namespace Graphics
         void EnableDepthTest() const {glEnable(GL_DEPTH_TEST); }
         void DisableDepthTest() const { glDisable(GL_DEPTH_TEST); }
 
-        int DeferredRenderDebugOutputIndex = 0;
+        Math::Matrix4 GetLightViewProj();
+
+        struct
+        {
+            int OutputIndex = 0;
+            int EnableBlur = 0;
+            int BlurStrength = 0;
+        }DebugRenderUniform;
     private:
         void renderScene(Scene* scene);
         void forwardRender(const std::shared_ptr<Shader>& shader, std::unordered_map<ObjectId, RenderObject*>& obj);

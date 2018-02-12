@@ -856,6 +856,18 @@ namespace Math
 
     }
 
+    Matrix4 Matrix4::CreateOrthographic(float width, float height, float zNear, float zFar)
+    {
+        Matrix4 mat;
+        mat.ZeroOut();
+        mat[0][0] = 2 / width;
+        mat[1][1] = 2 / height;
+        mat[2][2] = -2 / (zFar - zNear);
+        mat[2][3] = -(zFar + zNear) / (zFar - zNear);
+        mat[3][3] = 1;
+        return mat;
+    }
+
     Matrix4 operator*(float lhs, Mat4Param rhs)
     {
         return rhs * lhs;

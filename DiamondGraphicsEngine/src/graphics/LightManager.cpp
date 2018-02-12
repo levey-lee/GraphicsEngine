@@ -20,13 +20,19 @@ namespace Graphics
         //other attribute
         program->SetUniform(str.str() + "isActive",isActive);
         program->SetUniform(str.str() + "direction", direction);
-        program->SetUniform(str.str() + "type", static_cast<int>(type));
+        program->SetUniform(str.str() + "lightType", static_cast<int>(lightType));
+        program->SetUniform(str.str() + "shadowType", static_cast<int>(shadowType));
+        program->SetUniform(str.str() + "shadowStrength", static_cast<int>(shadowStrength));
         program->SetUniform(str.str() + "intensity", intensity);
+        if (shadowType == ShadowType::HardShadow)
+        {
+            program->SetUniform("LightViewProj", viewproj);
+        }
         if (ifDecay)
         {
             program->SetUniform(str.str() + "distanceAttenuation", disAtten);
         }        
-        switch (type)
+        switch (lightType)
         {
         case LightType::Directional:
             break;
@@ -77,7 +83,7 @@ namespace Graphics
     ////////////////////////////////////////////////////////////////////
     LightType LightBase::GetLightType() const
     {
-        return m_attribute->type;
+        return m_attribute->lightType;
     }
 
     float LightBase::GetIntensity() const
@@ -129,13 +135,19 @@ namespace Graphics
     {
         return m_attribute->specularColor;
     }
+
+    ShadowType LightBase::GetShadowType() const
+    {
+        return m_attribute->shadowType;
+    }
+
     ////////////////////////////////////////////////////////////////////
     //  Setters
     ////////////////////////////////////////////////////////////////////
 
     LightBase* LightBase::SetLightType(LightType type)
     {
-        m_attribute->type = type;
+        m_attribute->lightType = type;
         return this;
     }
 
@@ -145,13 +157,6 @@ namespace Graphics
         return this;
     }
 
-    LightBase* LightBase::SetDirection(Math::Vector3 const& dir)
-    {
-        m_attribute->direction.x = dir.x;
-        m_attribute->direction.y = dir.y;
-        m_attribute->direction.z = dir.z;
-        return this;
-    }
 
     LightBase* LightBase::SetInnerAngle(float radians)
     {
@@ -207,6 +212,12 @@ namespace Graphics
         return this;
     }
 
+    LightBase* LightBase::SetShadowType(ShadowType type)
+    {
+        m_attribute->shadowType = type;
+        return this;
+    }
+
     LightAttributeHandle LightManager::GetNewLightAttribute()
     {
         m_lightAttribtues.emplace_front(LightAttribute());
@@ -226,6 +237,18 @@ namespace Graphics
         {
             i.SetLightUniform(index++, shader);
         }
+    }
+
+    Math::Matrix4 LightManager::GetLightViewProj()
+    {
+        for (auto& i : m_lightAttribtues)
+        {
+            if (i.shadowType != ShadowType::NoShadow)
+            {
+                return i.viewproj;
+            }
+        }
+        return Math::Matrix4::c_Identity;
     }
 }
 

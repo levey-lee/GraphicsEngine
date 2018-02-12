@@ -8,117 +8,129 @@ namespace Math
     struct Vector2;
     struct Vector3;
     struct Matrix4;
-  struct Vector4;
+    struct Vector4;
 }
 
 namespace Graphics
 {
-  struct Color;
+    struct Color;
 
-  // A ShaderProgram is a wrapper around the GLSL shader objects stored within
-  // OpenGL. Shader programs on the GPU are lightweight applications that fill
-  // in functionality within the transformation and rasterization pipelines of
-  // the GPU. They essentially represent the low-level code written in CS200,
-  // but now that code is being executed on the GPU itself. Since it's a
-  // different architecture and processor, interacting with that application is
-  // much more complicated than any CPU-side C/C++ application. This class
-  // helps to simplify that interaction process, but you will want to have a
-  // good understanding of how the transformation/rasterization process works
-  // on the GPU before trying to understand this interface. ShaderProgram.cpp
-  // goes into greater depth on what an OpenGL shader program actually is, as
-  // well as the OpenGL code needed to work with it. For more information on
-  // building one of these classes yourself, see:
-  //   http://ogldev.atspace.co.uk/www/tutorial04/tutorial04.html
-  class ShaderProgram
-  {
-  public:
-    // Unbinds and destroys the shader program, including any CPU-side or
-    // GPU-side resources associated with the program.
-    ~ShaderProgram();
+    enum class ShaderUsage
+    {
+        Regular,
+        LightShadowMap
+    };
 
-    // Checks whether the shader program has a uniform by a given name, such as
-    // "MVP" or "LightCount."
-    bool HasUniform(std::string const &name) const;
 
-    // Checks whether the vertex shader is expecting an input attribute by a
-    // given name, such as "vVertex" or "vNormal."
-    bool HasAttribute(std::string const &name) const;
+    // A ShaderProgram is a wrapper around the GLSL shader objects stored within
+    // OpenGL. Shader programs on the GPU are lightweight applications that fill
+    // in functionality within the transformation and rasterization pipelines of
+    // the GPU. They essentially represent the low-level code written in CS200,
+    // but now that code is being executed on the GPU itself. Since it's a
+    // different architecture and processor, interacting with that application is
+    // much more complicated than any CPU-side C/C++ application. This class
+    // helps to simplify that interaction process, but you will want to have a
+    // good understanding of how the transformation/rasterization process works
+    // on the GPU before trying to understand this interface. ShaderProgram.cpp
+    // goes into greater depth on what an OpenGL shader program actually is, as
+    // well as the OpenGL code needed to work with it. For more information on
+    // building one of these classes yourself, see:
+    //   http://ogldev.atspace.co.uk/www/tutorial04/tutorial04.html
+    class ShaderProgram
+    {
+    public:
+        // Unbinds and destroys the shader program, including any CPU-side or
+        // GPU-side resources associated with the program.
+        ~ShaderProgram();
 
-    // Retrieves the index (OpenGL intrinsic value) associated to a uniform
-    // constant within the shader program, given its name.
-    u32 GetUniform(std::string const &name);
+        // Checks whether the shader program has a uniform by a given name, such as
+        // "MVP" or "LightCount."
+        bool HasUniform(std::string const& name) const;
 
-    // Retrieves the index (OpenGL intrinsic value) associated to a vertex
-    // attribute within the shader program, given its name.
-    u32 GetAttribute(std::string const &name);
+        // Checks whether the vertex shader is expecting an input attribute by a
+        // given name, such as "vVertex" or "vNormal."
+        bool HasAttribute(std::string const& name) const;
 
-    // Uploads the vertex and fragment shader code to the GPU, creates shader
-    // objects for those shaders, and compiles them. Creates the shader program
-    // object, attaches the compiled vertex and fragment shaders to the
-    // program and links them. It finishes with validating the program and
-    // cleaning up the shader objects used to construct it.
-    void Build();
+        // Retrieves the index (OpenGL intrinsic value) associated to a uniform
+        // constant within the shader program, given its name.
+        u32 GetUniform(std::string const& name);
 
-    // Binds this shader program for uses including setting uniform constant
-    // values and using the program to render geometry.
-    void Bind() const;
+        // Retrieves the index (OpenGL intrinsic value) associated to a vertex
+        // attribute within the shader program, given its name.
+        u32 GetAttribute(std::string const& name);
 
-    // Sets a uniform Vector4, given a name. This will send all 4 floats of the
-    // Vector4 to the GPU.
-    void SetUniform(std::string const &name, Math::Vector4 const &vector);
-    
-    // Sets a uniform Vector4, given a name. This will send all 3 floats of the
-    // Vector4 to the GPU.
-    void SetUniform(std::string const &name, Math::Vector3 const &vector);
-    void SetUniform(std::string const &name, Math::Vector2 const &vector);
+        // Uploads the vertex and fragment shader code to the GPU, creates shader
+        // objects for those shaders, and compiles them. Creates the shader program
+        // object, attaches the compiled vertex and fragment shaders to the
+        // program and links them. It finishes with validating the program and
+        // cleaning up the shader objects used to construct it.
+        void Build();
 
-    // Sets a uniform Matrix4, given a name. This will send all 16 floats of the
-    // Matrix4 to the GPU.
-    void SetUniform(std::string const &name, Math::Matrix4 const &matrix);
+        // Binds this shader program for uses including setting uniform constant
+        // values and using the program to render geometry.
+        void Bind() const;
 
-    // Sets a uniform Color, given a name. Colors are equivalent to vec4s in
-    // GLSL, therefore this just sends all 4 floats of the RGBA color (in that
-    // order), to the GPU.
-    void SetUniform(std::string const &name, Color const &color);
+        // Sets a uniform Vector4, given a name. This will send all 4 floats of the
+        // Vector4 to the GPU.
+        void SetUniform(std::string const& name, Math::Vector4 const& vector);
 
-    // Sets a uniform 32-bit, single precision float value, given a name. This
-    // sends the single float to the GPU.
-    void SetUniform(std::string const &name, f32 value);
+        // Sets a uniform Vector4, given a name. This will send all 3 floats of the
+        // Vector4 to the GPU.
+        void SetUniform(std::string const& name, Math::Vector3 const& vector);
+        void SetUniform(std::string const& name, Math::Vector2 const& vector);
 
-    // Sets a uniform 32-bit integral value, given a name. This sends the
-    // integer value to the GPU. The sign of this data type depends on how it
-    // is used within GLSL.
-    void SetUniform(std::string const &name, int value);
+        // Sets a uniform Matrix4, given a name. This will send all 16 floats of the
+        // Matrix4 to the GPU.
+        void SetUniform(std::string const& name, Math::Matrix4 const& matrix);
 
-    // Unbinds the shader program, disallowing it to be used for any future
-    // OpenGL operations until it is bound again.
-    void Unbind() const;
+        // Sets a uniform Color, given a name. Colors are equivalent to vec4s in
+        // GLSL, therefore this just sends all 4 floats of the RGBA color (in that
+        // order), to the GPU.
+        void SetUniform(std::string const& name, Color const& color);
 
-    // Loads a new ShaderProgram from disk, given relative paths to its vertex
-    // and fragment shader source files. These files are expected to be relative
-    // to assets/shaders, from the root directory. The function loads in these
-    // files in completion, then constructs a new ShaderProgram with the
-    // contents of those shaders. It does not call ShaderProgram::Build.
-    static std::shared_ptr<ShaderProgram> LoadShaderProgram(
-      std::string const &vertexShaderPath,
-      std::string const &fragmentShaderPath);
+        // Sets a uniform 32-bit, single precision float value, given a name. This
+        // sends the single float to the GPU.
+        void SetUniform(std::string const& name, f32 value);
 
-  private:
-    ShaderProgram(std::string const &vertexShaderSource,
-      std::string const &fragmentShaderSource,
-      std::string const &vertexShaderPath,
-      std::string const &fragmentShaderPath);
+        // Sets a uniform 32-bit integral value, given a name. This sends the
+        // integer value to the GPU. The sign of this data type depends on how it
+        // is used within GLSL.
+        void SetUniform(std::string const& name, int value);
 
-    u32 program_; /* OpenGL handle to the ShaderProgram object. */
+        // Unbinds the shader program, disallowing it to be used for any future
+        // OpenGL operations until it is bound again.
+        void Unbind() const;
 
-    std::string vertexShaderPath_, fragmentShaderPath_;
+        // Loads a new ShaderProgram from disk, given relative paths to its vertex
+        // and fragment shader source files. These files are expected to be relative
+        // to assets/shaders, from the root directory. The function loads in these
+        // files in completion, then constructs a new ShaderProgram with the
+        // contents of those shaders. It does not call ShaderProgram::Build.
+        static std::shared_ptr<ShaderProgram> LoadShaderProgram(
+            std::string const& vertexShaderPath,
+            std::string const& fragmentShaderPath);
 
-    /* Actual GLSL source code for the program's vertex and fragment shaders. */
-    std::string vertexShaderSource_, fragmentShaderSource_;
+        void SetUsage(ShaderUsage usage) { m_usage = usage; }
+        ShaderUsage GetUsage() const { return m_usage; }
 
-    /* Cached index maps of the uniforms/attributes that were set and get. */
-    std::unordered_map<std::string, u32> m_uniforms, attributes_;
-  };
+    private:
+        ShaderProgram(std::string const& vertexShaderSource,
+                      std::string const& fragmentShaderSource,
+                      std::string const& vertexShaderPath,
+                      std::string const& fragmentShaderPath);
+
+        ShaderUsage m_usage = ShaderUsage::Regular;
+
+        u32 m_program; /* OpenGL handle to the ShaderProgram object. */
+
+        std::string m_vertexShaderPath, m_fragmentShaderPath;
+
+        /* Actual GLSL source code for the program's vertex and fragment shaders. */
+        std::string m_vertexShaderSource, m_fragmentShaderSource;
+
+        /* Cached index maps of the uniforms/attributes that were set and get. */
+        std::unordered_map<std::string, u32> m_uniforms, m_attributes;
+    };
 }
 
 #endif

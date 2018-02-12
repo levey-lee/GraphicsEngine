@@ -10,7 +10,7 @@ namespace Graphics
     class ShaderProgram;
     class Texture;
 
-    enum class FboAttachedTextureType : u8
+    enum class GBufferAttachmentType : u8
     {
         //XYZ = Diffuse, W = U
         DiffuseColor_TexU,
@@ -29,7 +29,8 @@ namespace Graphics
         //not a color texture attachment of RGB,
         //this value is used to bind depth texture,
         //but not to attach it in the first pass
-        DepthTexture = Count
+        DepthTexture = Count,
+        ShadowMap
     };
 
     class Framebuffer
@@ -47,7 +48,7 @@ namespace Graphics
         Color const& GetClearColor() const { return m_clearColor; }
 
         void Resize(u32 width, u32 height);
-        void Build();
+        void Build(bool depthOnly = false);
         void Bind(); // bind for rendering
         void Clear();
         /*******************************************************
@@ -56,11 +57,12 @@ namespace Graphics
        * @return A pointer to texture from FBO
        *******************************************************/
         std::shared_ptr<Texture> const& GetFboColorAttachment(u8 attachmentIndex = 0) const;
-        std::shared_ptr<Texture> const& GetFboColorAttachment(FboAttachedTextureType type) const;
+        std::shared_ptr<Texture> const& GetFboColorAttachment(GBufferAttachmentType type) const;
         void Unbind();
         void Destroy();
         Framebuffer* BindGBufferTextures(const std::shared_ptr<ShaderProgram>& shaderProgram);
         Framebuffer* BindDepthTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
+        Framebuffer* BindShadowMapTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
 
     private:
         void genDepthTexture();
@@ -68,7 +70,7 @@ namespace Graphics
         u32 m_width, m_height;
         GLuint m_fbo = 0, m_depthTextureHandle = 0;
         Color m_clearColor = Color::Cyan;
-        std::shared_ptr<Texture> m_colorTexture[static_cast<int>(FboAttachedTextureType::Count)];
+        std::shared_ptr<Texture> m_colorTexture[static_cast<int>(GBufferAttachmentType::Count)];
 
 
 

@@ -43,7 +43,7 @@ namespace Graphics
     void CameraBase::SetCameraUniforms(std::shared_ptr<ShaderProgram> program)
 	{
      //camera position, fog, or anything global for all vertices.
-        program->SetUniform("Camera.ViewDir_world", GetViewVector());
+        //program->SetUniform("Camera.ViewDir_world", GetViewVector());
         program->SetUniform("Camera.Position_world", GetCameraWorldPosition());
         program->SetUniform("Camera.FarPlaneDist", GetFarPlaneDistance());
         program->SetUniform("Camera.NearPlaneDist", GetNearPlaneDistance());

@@ -105,8 +105,11 @@ class ComponentBase
     , public ComponentEditorInterface
 {
     friend class Object;
-public:
+
+    ///private constructor and friend class of T to prevent incorrect inheritance.
+    friend TComp;
     explicit ComponentBase(bool defaultEnable, Graphics::ShaderType shaderType = Graphics::ShaderType::Null) : m_isEnabled(defaultEnable), m_shaderType(shaderType){}
+public:
     virtual ~ComponentBase() = 0 {}
 
     void Enable() override;

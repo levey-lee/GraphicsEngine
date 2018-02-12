@@ -35,13 +35,15 @@ namespace Graphics
         return spshader;
     }
 
+    
     std::shared_ptr<Shader> ShaderManager::LoadShader(ShaderType shaderType,
-        std::vector<std::pair<std::string, std::string>> const& shaderFiles)
+        std::vector<std::tuple<std::string, std::string, ShaderUsage>> const& shaderFiles)
     {
         std::vector<std::shared_ptr<ShaderProgram> > shaders;
         for (auto& i : shaderFiles)
         {
-            std::shared_ptr<ShaderProgram> program = ShaderProgram::LoadShaderProgram(i.first, i.second);
+            std::shared_ptr<ShaderProgram> program = ShaderProgram::LoadShaderProgram(std::get<0>(i), std::get<1>(i));
+            program->SetUsage(std::get<2>(i));
             program->Build();
             shaders.emplace_back(program);
         }

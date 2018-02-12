@@ -2,6 +2,7 @@
 #include "math/Vector3.h"
 #include "graphics/Color.h"
 #include "math/Vector4.h"
+#include "math/Matrix4.h"
 
 namespace Graphics
 {
@@ -15,22 +16,29 @@ namespace Graphics
     {
         Directional,
         Point,
-        Spot,
+        Spot
         //Area
         //etc...
+    };
+    enum class ShadowType
+    {
+        NoShadow,
+        HardShadow,
+        SoftShadow
     };
 
     struct LightAttribute
     {
         //this will be written by light component
         bool isActive = true;
-        bool castShadow = false;
         //this will be written by light component
         Math::Vector4 position = Math::Vector4( 0,0,0,1 );
         Math::Vector4 direction = Math::Vector4(0, 0, -1, 0);
-        LightType type = LightType::Directional;
+        LightType lightType = LightType::Directional;
+        ShadowType shadowType = ShadowType::NoShadow;
+        float shadowStrength = 1.0f;
         float intensity = 1.0f;
-        float radius = 10.0f;
+        float range = 10.0f;
         float innerAngle = Math::c_Pi / 12.0f;//15 degree
         float outerAngle = Math::c_Pi / 6.0f;//30 degree
         float spotFalloff = 1.0f;
@@ -40,7 +48,7 @@ namespace Graphics
         Color diffuseColor = Color(1, 1, 1);
         Color ambientColor =  Color(0, 0, 0);
         Color specularColor = Color(0, 0, 0);
-
+        Math::Matrix4 viewproj;
         void SetLightUniform(int index ,std::shared_ptr<ShaderProgram> program) const;
     };
     
@@ -66,10 +74,10 @@ namespace Graphics
         virtual Color GetDiffuseColor() const;
         virtual Color GetAmbientColor() const;
         virtual Color GetSpecularColor() const;
+        virtual ShadowType GetShadowType() const;
         ////////////////////////////////////////////////////////////////////////
         virtual LightBase* SetLightType(LightType type);
         virtual LightBase* SetIntensity(float intensity);
-        virtual LightBase* SetDirection(Math::Vector3 const& dir);
         virtual LightBase* SetInnerAngle(float radians);
         virtual LightBase* SetOuterAngle(float radians);
         virtual LightBase* SetSpotlightFalloff(float val);
@@ -79,7 +87,7 @@ namespace Graphics
         virtual LightBase* SetDiffuseColor(Color const& diffuseColor);
         virtual LightBase* SetAmbientColor(Color const& ambientColor);
         virtual LightBase* SetSpecularColor(Color const& specularColor);
-        
+        virtual LightBase* SetShadowType(ShadowType type);
         LightAttributeHandle GetLightAttribute() const { return m_attribute; }
     protected:
         LightAttributeHandle m_attribute;
@@ -93,6 +101,8 @@ namespace Graphics
         static LightAttributeHandle GetNewLightAttribute();
         static void DeleteLightAttribute(LightAttributeHandle attr);
         void SetLightsUniform(std::shared_ptr<ShaderProgram> shader);
+        //todo return a list of matrix
+        Math::Matrix4 GetLightViewProj();
     private:
         static std::list<LightAttribute> m_lightAttribtues;
     };

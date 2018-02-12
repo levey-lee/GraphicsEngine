@@ -3,6 +3,7 @@
 
 namespace Graphics
 {
+    enum class ShaderUsage;
     class Shader;
     class ShaderProgram;
 
@@ -76,9 +77,10 @@ namespace Graphics
          * @note This is for deferred rendering.
          *******************************************************/
         std::shared_ptr<Shader> LoadShader(ShaderType shaderType,
-                                                std::vector<std::pair<
+                                                std::vector<std::tuple<
                                                 std::string /*vertexSourceFile*/,
-                                                std::string /*fragmentSourceFile*/> >const& shaderFiles);
+                                                std::string /*fragmentSourceFile*/,
+                                                ShaderUsage>>const& shaderFiles);
 
         // Retreives a shader program based on its ShaderType. If the type is
         // unknown, this method returns NULL.

@@ -130,8 +130,10 @@ namespace
         TwRemoveAllVars(resourceBar);
         TwAddButton(resourceBar, nullptr, nullptr, nullptr, "label='Rendering'");        
         TwAddButton(resourceBar, nullptr, OutputDeferredBuffers, nullptr, "label='Output Buffer Textures'");
-        TwType deferredRenderType = TwDefineEnumFromString(nullptr, "Combined, Diffuse Color, World Position, World Normal, Specular Color, Depth");
-        TwAddVarRW(resourceBar, nullptr, deferredRenderType, &graphics->DeferredRenderDebugOutputIndex, "label='Deferred Output'");
+        TwType deferredRenderType = TwDefineEnumFromString(nullptr, "Combined, Diffuse Color, World Position, World Normal, Specular Color, Depth, Shadow Map");
+        TwAddVarRW(resourceBar, nullptr, deferredRenderType, &graphics->DebugRenderUniform.OutputIndex, "label='Deferred Output'");
+        TwAddVarRW(resourceBar, nullptr, TW_TYPE_BOOL32, &graphics->DebugRenderUniform.EnableBlur, "label='Enable Blur'");
+        TwAddVarRW(resourceBar, nullptr, TW_TYPE_INT32, &graphics->DebugRenderUniform.BlurStrength, "label='Blur Strength'");
 
         TwAddVarCB(resourceBar, nullptr, TW_TYPE_COLOR3F, SetBackgroundColor, GetBackgroundColor, nullptr, "label='Background Color'");
         TwAddSeparator(resourceBar, nullptr, nullptr);

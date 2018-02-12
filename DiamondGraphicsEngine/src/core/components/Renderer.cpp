@@ -6,6 +6,7 @@
 #include "graphics/GraphicsEngine.h"
 #include "graphics/MaterialManager.h"
 #include "graphics/MeshManager.h"
+#include "graphics/ShaderProgram.h"
 
 ////////////////////////////////////////////
 //  used for editor
@@ -111,7 +112,11 @@ void Component::Renderer::SetShaderParams(std::shared_ptr<Graphics::ShaderProgra
 #endif // _DEBUG
     if (m_material != nullptr)
     {
-        m_material->SetShaderParameters(shader, g);
+        Graphics::ShaderUsage shaderUsage = shader->GetUsage();
+        if (shaderUsage == Graphics::ShaderUsage::Regular)
+        {
+            m_material->SetShaderParameters(shader, g);
+        }
 #ifdef _DEBUG
         m_hasMaterial = true;
 #endif // _DEBUG

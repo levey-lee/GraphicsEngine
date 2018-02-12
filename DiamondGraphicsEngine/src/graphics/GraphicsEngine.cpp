@@ -68,6 +68,11 @@ namespace Graphics
         glClearColor(color.r, color.g, color.b, color.a);
     }
 
+    Math::Matrix4 GraphicsEngine::GetLightViewProj()
+    {
+        return m_lightManager->GetLightViewProj();
+    }
+
     void GraphicsEngine::renderScene(Scene* scene)
     {
         auto& renderList = scene->GetRenderObjectListRef();
@@ -125,27 +130,43 @@ namespace Graphics
             }
             m_textureManager->UnbindAll();
         }
-        DisableDepthTest();
 
         //TODO Deferred Shading Step 2 : Set Light and framebuffer textures
-        //program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
-        //program->Bind();
+        program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
+        program->Bind();
+        m_frameBufferManager->Bind(FramebufferType::DeferredShadowMap);
+        m_frameBufferManager->Clear(FramebufferType::DeferredShadowMap);
         //m_lightManager->SetLightsUniform(program);
         //m_viewCamera->SetCameraUniforms(program);
+        for (auto& i : obj)//per object
+        {
+            for (auto& j : *i.second)//per shaded component
+            {
+                j->SetShaderParams(program, this);
+            }
+        }
+        DisableDepthTest();
 
 
         //TODO Deferred Shading Step 3 : Render FSQ
         m_frameBufferManager->Bind(FramebufferType::Screen);
-        program = shader->GetShaderProgram(ShaderStage::DeferredLighting/*this is ONLY TEST*/);
+        program = shader->GetShaderProgram(ShaderStage::RenderFullScreenQuad);
         program->Bind();
 
-        m_lightManager->SetLightsUniform(program);
+        //shadow map
+        m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredShadowMap)->BindShadowMapTexture(program);
+        program->SetUniform("LightViewProj", m_lightManager->GetLightViewProj());
 
+        //light
+        m_viewCamera->SetCameraUniforms(program);
+        m_lightManager->SetLightsUniform(program);
         std::shared_ptr<Framebuffer> fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
         fbo->BindGBufferTextures(program);
         fbo->BindDepthTexture(program);
         m_meshManager->GetMesh("FSQ")->Render();
-        program->SetUniform("DebugOutputIndex", DeferredRenderDebugOutputIndex);
+        program->SetUniform("DebugOutputIndex", DebugRenderUniform.OutputIndex);
+        program->SetUniform("EnableBlur", DebugRenderUniform.EnableBlur);
+        program->SetUniform("BlurStrength", DebugRenderUniform.BlurStrength);
         float screenWidth = static_cast<float>(fbo->GetWidth());
         float screenHeight = static_cast<float>(fbo->GetHeight());
         program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));

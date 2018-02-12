@@ -25,7 +25,7 @@
 #define SAMPLE_IMPLEMENTATION 1
 #define ASSIGNMENT_1_HIDE_SHADER 0
 #define VERBOSE 1
-#define DEFERRED_SHADING_TEST 0
+#define DEFERRED_SHADING_TEST 1
 #define UNUSED_VAR(x) static_cast<void>(x);
 
 #if VERBOSE
