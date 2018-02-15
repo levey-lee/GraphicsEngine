@@ -165,24 +165,24 @@ void Initialize(Application* app, void* /*userdata*/)
         camtrans.SetScale(1000.0f);
         camObj.AddComponent<Camera>(camtrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
         camObj.AddComponent<Skydome>(materialManager->GetMaterial("Skydome"), sphereReversedMesh);
-        camObj.AddComponent<Light>()
-            .SetLightType(LightType::Directional)
-            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
-            ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f))
-            ->SetShadowType(ShadowType::HardShadow);
-        camObj.SetName("Camera");
-        g_Cam = camObj.GetHandle();
-
-
-        //Object& lightObj = g_MainScene.CreateObject(usingShader);
-        //Component::Transform& lightTrans = lightObj.GetComponentRef<Component::Transform>();
-        //lightTrans.SetPosition({-2, 2, 2}).SetRotation({ 0, -c_Pi / 4.0f, -c_Pi / 4.0f });
-        //lightObj.AddComponent<Light>()
+        //camObj.AddComponent<Light>()
         //    .SetLightType(LightType::Directional)
         //    ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
         //    ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f))
         //    ->SetShadowType(ShadowType::HardShadow);
-        //lightObj.SetName("Light");
+        camObj.SetName("Camera");
+        g_Cam = camObj.GetHandle();
+
+
+        Object& lightObj = g_MainScene.CreateObject(usingShader);
+        Component::Transform& lightTrans = lightObj.GetComponentRef<Component::Transform>();
+        lightTrans.SetPosition({-2, 2, 2}).SetRotation({ 0, -c_Pi / 4.0f, -c_Pi / 4.0f });
+        lightObj.AddComponent<Light>()
+            .SetLightType(LightType::Directional)
+            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
+            ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f))
+            ->SetShadowType(ShadowType::HardShadow);
+        lightObj.SetName("Light");
 
     }
     TwEditor::CreateComponentEditor("Object & Component", g_MainScene.GetEditorObjectRef(), g_Graphics);

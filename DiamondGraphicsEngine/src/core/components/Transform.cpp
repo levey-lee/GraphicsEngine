@@ -67,13 +67,13 @@ void Component::Transform::SetShaderParams(std::shared_ptr<Graphics::ShaderProgr
     else if (shaderUsage == Graphics::ShaderUsage::LightShadowMap)
     {
         //todo shadow map, uncomment
-        //auto viewProj = graphics->GetLightViewProj();
-        //auto worldTrans = GetWorldTransform();
-        //Math::Matrix4 mvp = viewProj  *worldTrans;
-        //shader->SetUniform("ModelViewProjectionMatrix", mvp);
-        Math::Matrix4 const& modelMatrix = GetWorldTransform();
-        Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
+        Math::Matrix4 viewProj = graphics->GetLightViewProj();
+        Math::Matrix4 const& worldTrans = GetWorldTransform();
+        Math::Matrix4 mvp = viewProj  *worldTrans;
         shader->SetUniform("ModelViewProjectionMatrix", mvp);
+        //Math::Matrix4 const& modelMatrix = GetWorldTransform();
+        //Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
+        //shader->SetUniform("ModelViewProjectionMatrix", mvp);
     }
 }
 

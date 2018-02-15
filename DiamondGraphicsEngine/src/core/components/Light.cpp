@@ -123,8 +123,13 @@ namespace Component
             Math::Matrix4 projection;
             projection.ZeroOut();
             if (m_attribute->lightType == Graphics::LightType::Directional)
-            {//todo
-                projection = projection.CreateOrthographic(1000, 1000, 1, 1000);
+            {//todo shadow
+                //projection = projection.CreateOrthographic(1000, 1000, 1, 1000);
+                projection = projection.CreateProjection(60.0f, 1000, 1000, 1, 1000);
+            }
+            else if (m_attribute->lightType == Graphics::LightType::Spot)
+            {
+                //TODO add perspective
             }
             else if (m_attribute->lightType == Graphics::LightType::Point)
             {
