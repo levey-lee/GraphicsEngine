@@ -176,7 +176,10 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& lightObj = g_MainScene.CreateObject(usingShader);
         Component::Transform& lightTrans = lightObj.GetComponentRef<Component::Transform>();
-        lightTrans.SetPosition({-2, 2, 2}).SetRotation({ 0, -c_Pi / 4.0f, -c_Pi / 4.0f });
+        lightTrans.SetPosition({2, 2, 2}).SetRotation({ -c_Pi / 6.0f, -c_Pi / 4.0f, -c_Pi / 4.0f });
+        //lightTrans.SetPosition({ 0,1.75f, 2 });
+        //lightObj.AddComponent<Camera>(lightTrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
+        //lightObj.GetComponentRef<Camera>().SetNearPlaneDistance(1.0f);
         lightObj.AddComponent<Light>()
             .SetLightType(LightType::Directional)
             ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))

@@ -65,7 +65,7 @@ namespace Graphics
         Framebuffer* BindShadowMapTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
 
     private:
-        void genDepthTexture();
+        void genDepthTexture(bool asShadowMap);
 
         u32 m_width, m_height;
         GLuint m_fbo = 0, m_depthTextureHandle = 0;

@@ -113,7 +113,7 @@ namespace Graphics
         void SetUsage(ShaderUsage usage) { m_usage = usage; }
         ShaderUsage GetUsage() const { return m_usage; }
 
-    private:
+    //BUG private:
         ShaderProgram(std::string const& vertexShaderSource,
                       std::string const& fragmentShaderSource,
                       std::string const& vertexShaderPath,

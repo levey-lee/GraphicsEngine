@@ -131,7 +131,9 @@ namespace Graphics
             m_textureManager->UnbindAll();
         }
 
-        //TODO Deferred Shading Step 2 : Set Light and framebuffer textures
+        //TODO Deferred Shading Step 2 : Generate Shadow Map
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
         program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
         program->Bind();
         m_frameBufferManager->Bind(FramebufferType::DeferredShadowMap);
@@ -146,6 +148,8 @@ namespace Graphics
             }
         }
         DisableDepthTest();
+        glDisable(GL_CULL_FACE);
+
 
 
         //TODO Deferred Shading Step 3 : Render FSQ
@@ -163,6 +167,7 @@ namespace Graphics
         std::shared_ptr<Framebuffer> fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
         fbo->BindGBufferTextures(program);
         fbo->BindDepthTexture(program);
+
         m_meshManager->GetMesh("FSQ")->Render();
         program->SetUniform("DebugOutputIndex", DebugRenderUniform.OutputIndex);
         program->SetUniform("EnableBlur", DebugRenderUniform.EnableBlur);
@@ -170,6 +175,8 @@ namespace Graphics
         float screenWidth = static_cast<float>(fbo->GetWidth());
         float screenHeight = static_cast<float>(fbo->GetHeight());
         program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));
+
+		glValidateProgram(program->m_program);
     }
 }
 

@@ -58,7 +58,7 @@ namespace Graphics
                 i->m_isBuilt = true;
                 ++counter;
             }
-            genDepthTexture();
+            genDepthTexture(false);
             for (u8 i = 0; i < static_cast<u8>(GBufferAttachmentType::Count); i++)
             {
                 glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, m_colorTexture[i]->GetTextureHandle(), 0);
@@ -75,7 +75,7 @@ namespace Graphics
         }
         else//depthOnly
         {
-            genDepthTexture();
+            genDepthTexture(true);
             glDrawBuffer(GL_NONE); // No color buffer is drawn to.
         }
         // verify it worked
@@ -130,18 +130,23 @@ namespace Graphics
         m_depthTextureHandle = NULL;
     }
 
-    void Framebuffer::genDepthTexture()
+    void Framebuffer::genDepthTexture(bool asShadowMap)
     {
         glGenTextures(1, &m_depthTextureHandle);
         glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		//glPolygonOffset(4.0f, 20.0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        if (asShadowMap)
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        }
+    	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
 
         //glGenTextures(1, &m_depthTextureHandle);
         //glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
@@ -150,8 +155,7 @@ namespace Graphics
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+
         //glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
     }
 
@@ -179,7 +183,8 @@ namespace Graphics
 
     Framebuffer* Framebuffer::BindDepthTexture(const std::shared_ptr<ShaderProgram>& shaderProgram) 
     {
-        glActiveTexture(GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::DepthTexture));
+		auto num = GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::DepthTexture);
+        glActiveTexture(num);
         glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
         shaderProgram->SetUniform("Depth_Texture", static_cast<u8>(GBufferAttachmentType::DepthTexture));
 
@@ -187,7 +192,8 @@ namespace Graphics
     }
     Framebuffer* Framebuffer::BindShadowMapTexture(const std::shared_ptr<ShaderProgram>& shaderProgram) 
     {
-        glActiveTexture(GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::ShadowMap));
+		auto num = GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::ShadowMap);
+        glActiveTexture(num);
         glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
         shaderProgram->SetUniform("ShadowMaps_Texture", static_cast<u8>(GBufferAttachmentType::ShadowMap));
 

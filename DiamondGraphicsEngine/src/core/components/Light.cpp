@@ -106,18 +106,16 @@ namespace Component
 
     void Light::Update(float)
     {
-        auto const& temPos = m_owner->GetComponentRef<Transform>().GetPosition();
-        m_attribute->position.x = temPos.x;
-        m_attribute->position.y = temPos.y;
-        m_attribute->position.z = temPos.z;
-
-
         if (m_owner)
         {
             auto& trans = m_owner->GetComponentRef<Transform>();
             Math::Matrix4 const& worldTrans = trans.GetWorldTransform();
             Math::Vector3 newDir = Math::TransformNormal(worldTrans, Math::Vector3(0, 0, -1));
             m_attribute->direction = Math::Vector4(newDir.x, newDir.y, newDir.z, 0);
+            auto worldPos = Math::TransformPoint(worldTrans, {0,0,0});
+            m_attribute->position.x = worldPos.x;
+            m_attribute->position.y = worldPos.y;
+            m_attribute->position.z = worldPos.z;
 
             //viewproj = projection * view
             Math::Matrix4 projection;
@@ -125,7 +123,7 @@ namespace Component
             if (m_attribute->lightType == Graphics::LightType::Directional)
             {//todo shadow
                 //projection = projection.CreateOrthographic(1000, 1000, 1, 1000);
-                projection = projection.CreateProjection(60.0f, 1000, 1000, 1, 1000);
+                projection = projection.CreateProjection( Math::c_Pi*0.1f, 1280, 760, 1, 1000).Transpose();
             }
             else if (m_attribute->lightType == Graphics::LightType::Spot)
             {

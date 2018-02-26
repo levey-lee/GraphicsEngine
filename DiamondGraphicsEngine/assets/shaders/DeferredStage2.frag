@@ -29,15 +29,15 @@ uniform sampler2D WorldPosition_TexV_Texture;
 uniform sampler2D WorldNormal_ReceiveLight_Texture;
 uniform sampler2D SpecColor_SpecPow_Texture;
 uniform sampler2D Depth_Texture;
-uniform sampler2D ShadowMaps_Texture; 
+uniform sampler2DShadow ShadowMaps_Texture; 
 uniform mat4 LightViewProj;
 struct Light
 {
   bool isActive;
   vec4 position;
   vec4 direction; // direction the light is directed
-  vec4 ambient; // ambient light cast onto objects
-  vec4 diffuse; // diffuse light cast onto objects
+  vec4 ambient;   // ambient light cast onto objects
+  vec4 diffuse;   // diffuse light cast onto objects
   vec4 specular;
   int lightType;
   int shadowType;
@@ -81,7 +81,17 @@ vec4 DoDirectionalLight(in Light light, in vec4 worldNormal, in vec4 worldPos,in
   vec4 specular = light.specular
                 * vec4(specFactor.xyz, 1)
                 * pow(max(dot(reflect(lightVec, worldNormal),viewVec),0),specFactor.w);
-  return light.intensity*(ambient + diffuse + specular); // total contribution from this light
+
+  mat4 biasMatrix = mat4(vec4(0.5f,0,0,0),
+                         vec4(0,0.5f,0,0),
+                         vec4(0,0,0.5f,0),
+                         vec4(0.5f,0.5f,0.5f,1));
+                         
+  vec4 ShadowCoord = biasMatrix*LightViewProj*worldPos;
+
+  float visibility = textureProj(ShadowMaps_Texture, ShadowCoord);
+  
+  return light.intensity*(ambient + visibility*(diffuse + specular)); // total contribution from this light
 }
 vec4 computeLightingTerm(in int lightIdx, in vec4 worldNormal, in vec4 worldPos,in vec2 uv)
 {
@@ -123,7 +133,6 @@ vec4 computeLightingTerm(in int lightIdx, in vec4 worldNormal, in vec4 worldPos,
 
 vec4 computeSurfaceColor(in vec4 worldNormal,in vec4 worldPos,in vec2 uv)
 {
-  // Phong: total contribution of light is sum of all individual light contribs.
   vec4 color = vec4(0, 0, 0, 0); // no light = black
   for (int i = 0; i < LightCount; ++i)
     color += computeLightingTerm(i, worldNormal, worldPos, uv); // contribution of light i
@@ -142,9 +151,6 @@ void main()
     discard;
   vec4 worldNormal = vec4(pixelNormal, 0);
   
-  vec3 LightPosition = vec3(0,0,1);
-  vec3 LookAtLightSource = 
-  normalize(LightPosition - pixelPos);
   vFragColor.w = 1;
   if (DebugOutputIndex == DEBUG_OUTPUT_COMBINED)
   {
@@ -193,9 +199,8 @@ void main()
     else
     {
       outputColor = pixelMatColor;
-    } 
+    }
     vFragColor.xyz = outputColor;
-      
   }
   else if (DebugOutputIndex == DEBUG_OUTPUT_DIFFUSE)
   {
@@ -219,9 +224,18 @@ void main()
   }
   else if (DebugOutputIndex == DEBUG_OUTPUT_SHADOWMAP)
   {
-    vFragColor = texture(ShadowMaps_Texture, uvPos);
+    // vFragColor = texture(ShadowMaps_Texture, uvPos);
+    mat4 biasMatrix = mat4(vec4(0.5f,0,0,0.5f),
+                           vec4(0,0.5f,0,0.5f),
+                           vec4(0,0,0.5f,0.5f),
+                           vec4(0,0,0,1));
+                           
+    vec4 ShadowCoord = transpose(biasMatrix)*LightViewProj*worldPos;
+    float depth = textureProj(ShadowMaps_Texture, ShadowCoord);
+    
+    vFragColor.x = depth;
+    vFragColor.y = depth;
+    vFragColor.z = depth;
+    vFragColor.w = 1;
   }
-  
-  
-  
 }

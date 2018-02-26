@@ -6,9 +6,9 @@ layout(location = 2) in vec2 vUv;
 layout(location = 3) in vec3 vTangent;
 layout(location = 4) in vec3 vBitangent;
 
-uniform mat4 ModelViewProjectionMatrix; 
+uniform mat4 LightMVP; 
 
 void main()
 {
-  gl_Position = ModelViewProjectionMatrix * vec4(vPosition, 1);  
+  gl_Position = LightMVP * vec4(vPosition, 1);  
 }

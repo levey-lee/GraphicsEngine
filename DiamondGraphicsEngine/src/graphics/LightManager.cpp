@@ -243,6 +243,8 @@ namespace Graphics
     {
         for (auto& i : m_lightAttribtues)
         {
+            //TODO: For now it supports only one shadow-casting light
+            //TODO: make this better and support more lights
             if (i.shadowType != ShadowType::NoShadow)
             {
                 return i.viewproj;

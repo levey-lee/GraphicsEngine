@@ -458,7 +458,7 @@ namespace Graphics
     VerifyProgramLinking(m_vertexShaderPath, m_fragmentShaderPath, program);
 
     // validate the program is operational in the current OpenGL state
-    glValidateProgram(program);
+    //BUG glValidateProgram(program);
     VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, program);
 
     // Per the OpenGL specification, it is not required to hold on to these
@@ -481,7 +481,7 @@ namespace Graphics
 
     // ensure we can use this program in the current OpenGL context
 #ifdef _DEBUG
-    glValidateProgram(m_program);
+    //BUG glValidateProgram(m_program);
     VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, m_program);
 #endif
   }

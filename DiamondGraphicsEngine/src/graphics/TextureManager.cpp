@@ -176,7 +176,7 @@ namespace Graphics
     size_t TextureManager::ProcessThreadLoadedTexture()
     {
         std::lock_guard<std::shared_mutex> guard(m_mapMutex);
-        if (!m_loadingTextureQueue.empty())
+        while (!m_loadingTextureQueue.empty())
         {
             std::shared_ptr<Texture> texture = m_loadingTextureQueue.front();
             m_loadingTextureQueue.pop_front();
