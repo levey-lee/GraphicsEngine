@@ -12,7 +12,9 @@ namespace Graphics
         ForwardRendering = 0,
         DiffuseMaterial = 0,
         DeferredLighting = 1,
-        RenderFullScreenQuad = 2,
+        ShadowBlurH = 2,
+        ShadowBlurV = 3,
+        RenderFullScreenQuad = 4,
 
         Count
     };

@@ -18,9 +18,12 @@ namespace Graphics
         Screen = 0,
         DeferredGBuffer,
         DeferredShadowMap,
+        ShadowBlurH,
+        ShadowBlurV,
         // TODO(student): For Deferred Shader(Assignment 3), add more types here, such as POSITIVE_Z or NEGATIVE_X
 
-        COUNT
+        COUNT,
+        
     };
 
     class FramebufferManager

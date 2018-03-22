@@ -72,6 +72,11 @@ namespace Graphics
     {
         return m_lightManager->GetLightViewProj();
     }
+    Math::Vec3 GraphicsEngine::GetShadowingLightPos()
+    {
+        return m_lightManager->GetShadowingLightPos();
+    }
+    
 
     void GraphicsEngine::renderScene(Scene* scene)
     {
@@ -132,13 +137,16 @@ namespace Graphics
         }
 
         //TODO Deferred Shading Step 2 : Generate Shadow Map
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        //glEnable(GL_CULL_FACE);
+        //glCullFace(GL_FRONT);
+
+        //glDepthRange(0, 1000);
+
         program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
         program->Bind();
         m_frameBufferManager->Bind(FramebufferType::DeferredShadowMap);
         m_frameBufferManager->Clear(FramebufferType::DeferredShadowMap);
-        //m_lightManager->SetLightsUniform(program);
+        m_lightManager->SetLightShadowUniforms(program);
         //m_viewCamera->SetCameraUniforms(program);
         for (auto& i : obj)//per object
         {
@@ -148,23 +156,52 @@ namespace Graphics
             }
         }
         DisableDepthTest();
-        glDisable(GL_CULL_FACE);
+        //glDisable(GL_CULL_FACE);
+
+        //TODO Deferred Shading Step 3 : Blur ShadowMap Horinzontally
+        program = shader->GetShaderProgram(ShaderStage::ShadowBlurH);
+        program->Bind();
+        m_lightManager->SetShadowFilterUniforms(program);
+        m_frameBufferManager->Bind(FramebufferType::ShadowBlurH);
+        m_frameBufferManager->Clear(FramebufferType::ShadowBlurH);
+        m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredShadowMap)->BindShadowMapTexture(program);
+
+        std::shared_ptr<Framebuffer> fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurH);
+        float fboWidth = static_cast<float>(fbo->GetWidth());
+        float fboHeight = static_cast<float>(fbo->GetHeight());
+        program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
+        m_meshManager->GetMesh("FSQ")->Render();
 
 
+        //TODO Deferred Shading Step 4 : Blur ShadowMap Vertically
+        program = shader->GetShaderProgram(ShaderStage::ShadowBlurV);
+        program->Bind();
+        m_lightManager->SetShadowFilterUniforms(program);
+        m_frameBufferManager->Bind(FramebufferType::ShadowBlurV);
+        m_frameBufferManager->Clear(FramebufferType::ShadowBlurV);
+        m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurH)->BindShadowMapTexture(program);
 
-        //TODO Deferred Shading Step 3 : Render FSQ
+        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurV);
+        fboWidth = static_cast<float>(fbo->GetWidth());
+        fboHeight = static_cast<float>(fbo->GetHeight());
+        program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
+        m_meshManager->GetMesh("FSQ")->Render();
+        
+
+        //TODO Deferred Shading Step 4 : Render FSQ
         m_frameBufferManager->Bind(FramebufferType::Screen);
         program = shader->GetShaderProgram(ShaderStage::RenderFullScreenQuad);
         program->Bind();
 
         //shadow map
-        m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredShadowMap)->BindShadowMapTexture(program);
+        m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurV)->BindShadowMapTexture(program);
         program->SetUniform("LightViewProj", m_lightManager->GetLightViewProj());
 
         //light
         m_viewCamera->SetCameraUniforms(program);
         m_lightManager->SetLightsUniform(program);
-        std::shared_ptr<Framebuffer> fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
+        m_lightManager->SetLightShadowUniforms(program);
+        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
         fbo->BindGBufferTextures(program);
         fbo->BindDepthTexture(program);
 
@@ -176,7 +213,7 @@ namespace Graphics
         float screenHeight = static_cast<float>(fbo->GetHeight());
         program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));
 
-		glValidateProgram(program->m_program);
+        program->Validate();
     }
 }
 

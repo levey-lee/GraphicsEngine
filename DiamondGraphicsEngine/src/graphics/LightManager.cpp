@@ -19,10 +19,11 @@ namespace Graphics
         program->SetUniform(str.str() + "specular", specularColor);
         //other attribute
         program->SetUniform(str.str() + "isActive",isActive);
+        program->SetUniform(str.str() + "position", position);
         program->SetUniform(str.str() + "direction", direction);
         program->SetUniform(str.str() + "lightType", static_cast<int>(lightType));
         program->SetUniform(str.str() + "shadowType", static_cast<int>(shadowType));
-        program->SetUniform(str.str() + "shadowStrength", static_cast<int>(shadowStrength));
+        program->SetUniform(str.str() + "shadowStrength", shadowStrength);
         program->SetUniform(str.str() + "intensity", intensity);
         if (shadowType == ShadowType::HardShadow)
         {
@@ -37,10 +38,8 @@ namespace Graphics
         case LightType::Directional:
             break;
         case LightType::Point:
-            program->SetUniform(str.str() + "position", position);
             break;
         case LightType::Spot:
-            program->SetUniform(str.str() + "position", position);
             program->SetUniform(str.str() + "innerAngle", innerAngle);
             program->SetUniform(str.str() + "outerAngle", outerAngle);
             program->SetUniform(str.str() + "spotFalloff", spotFalloff);
@@ -239,6 +238,19 @@ namespace Graphics
         }
     }
 
+    void LightManager::SetLightShadowUniforms(std::shared_ptr<ShaderProgram> shader)
+    {
+        //TODO this sets only one light for testing purpose
+        shader->SetUniform("LightNearPlane", m_lightAttribtues.front().nearPlane);
+        shader->SetUniform("LightFarPlane", m_lightAttribtues.front().farPlane);
+        shader->SetUniform("LightShadowExp", m_lightAttribtues.front().shadowExp);
+    }
+
+    void LightManager::SetShadowFilterUniforms(std::shared_ptr<ShaderProgram> shader)
+    {
+        shader->SetUniform("ShadowFilterWidth", m_lightAttribtues.front().filterWidth);
+    }
+
     Math::Matrix4 LightManager::GetLightViewProj()
     {
         for (auto& i : m_lightAttribtues)
@@ -251,6 +263,20 @@ namespace Graphics
             }
         }
         return Math::Matrix4::c_Identity;
+    }
+
+    Math::Vec3 LightManager::GetShadowingLightPos()
+    {
+        for (auto& i : m_lightAttribtues)
+        {
+            //TODO: For now it supports only one shadow-casting light
+            //TODO: make this better and support more lights
+            if (i.shadowType != ShadowType::NoShadow)
+            {
+                return Math::Vec3(i.position.x, i.position.y, i.position.z);
+            }
+        }
+        return {0,0,0};
     }
 }
 

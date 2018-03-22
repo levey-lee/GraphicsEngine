@@ -37,8 +37,13 @@ namespace Graphics
         LightType lightType = LightType::Directional;
         ShadowType shadowType = ShadowType::NoShadow;
         float shadowStrength = 1.0f;
+        float shadowFov = 1.0f;
+        int filterWidth = 5;
         float intensity = 1.0f;
         float range = 10.0f;
+        float nearPlane = 1;
+        float farPlane = 100;
+        float shadowExp = 100.0f;
         float innerAngle = Math::c_Pi / 12.0f;//15 degree
         float outerAngle = Math::c_Pi / 6.0f;//30 degree
         float spotFalloff = 1.0f;
@@ -101,8 +106,11 @@ namespace Graphics
         static LightAttributeHandle GetNewLightAttribute();
         static void DeleteLightAttribute(LightAttributeHandle attr);
         void SetLightsUniform(std::shared_ptr<ShaderProgram> shader);
+        void SetLightShadowUniforms(std::shared_ptr<ShaderProgram> shader);
+        void SetShadowFilterUniforms(std::shared_ptr<ShaderProgram> shader);
         //todo return a list of matrix
         Math::Matrix4 GetLightViewProj();
+        Math::Vec3 GetShadowingLightPos();
     private:
         static std::list<LightAttribute> m_lightAttribtues;
     };

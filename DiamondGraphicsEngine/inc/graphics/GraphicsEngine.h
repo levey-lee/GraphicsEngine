@@ -44,6 +44,7 @@ namespace Graphics
         void DisableDepthTest() const { glDisable(GL_DEPTH_TEST); }
 
         Math::Matrix4 GetLightViewProj();
+        Math::Vec3 GetShadowingLightPos();
 
         struct
         {

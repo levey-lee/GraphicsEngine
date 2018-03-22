@@ -53,7 +53,7 @@ namespace Graphics
                 }
                 else
                 {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_FLOAT, nullptr);
                 }
                 i->m_isBuilt = true;
                 ++counter;
@@ -76,7 +76,6 @@ namespace Graphics
         else//depthOnly
         {
             genDepthTexture(true);
-            glDrawBuffer(GL_NONE); // No color buffer is drawn to.
         }
         // verify it worked
         GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -134,29 +133,36 @@ namespace Graphics
     {
         glGenTextures(1, &m_depthTextureHandle);
         glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
-		//glPolygonOffset(4.0f, 20.0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        //glPolygonOffset(4.0f, 20.0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
+
         if (asShadowMap)
         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            glGenTextures(1, &m_floatBuffer);
+            glBindTexture(GL_TEXTURE_2D, m_floatBuffer);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_width, m_height, 0, GL_RED, GL_FLOAT, nullptr);
+
+
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + static_cast<u8>(GBufferAttachmentType::DiffuseColor_TexU), m_floatBuffer, 0);
+
+            GLenum DrawBuffers[1] = {
+                GL_COLOR_ATTACHMENT0 + static_cast<u8>(GBufferAttachmentType::DiffuseColor_TexU),
+            };
+            glDrawBuffers(1, DrawBuffers); // size of DrawBuffers
+
         }
-    	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
 
-        //glGenTextures(1, &m_depthTextureHandle);
-        //glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
-        //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        //glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
+        CheckGL();
     }
 
     Framebuffer* Framebuffer::BindGBufferTextures(const std::shared_ptr<ShaderProgram>& shaderProgram) 
@@ -192,10 +198,10 @@ namespace Graphics
     }
     Framebuffer* Framebuffer::BindShadowMapTexture(const std::shared_ptr<ShaderProgram>& shaderProgram) 
     {
-		auto num = GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::ShadowMap);
+        auto num = GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::FloatBuffer);
         glActiveTexture(num);
-        glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
-        shaderProgram->SetUniform("ShadowMaps_Texture", static_cast<u8>(GBufferAttachmentType::ShadowMap));
+        glBindTexture(GL_TEXTURE_2D, m_floatBuffer);
+        shaderProgram->SetUniform("ShadowMaps_Texture", static_cast<u8>(GBufferAttachmentType::FloatBuffer));
 
         return this;
     }

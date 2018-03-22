@@ -75,10 +75,15 @@ void SetLightEditor(Component::Light* light)
     TwAddVarCB(editorCache, nullptr, lightTypeEnumType, TwCallBack::SetLightType, TwCallBack::GetLightType, light, (defStr + " label='Light Type'").c_str());
     TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->intensity, (defStr + " label=Intensity step=0.01 min=0").c_str());
     TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->range, (defStr + " label=Range step=0.01 min=0").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->nearPlane, (defStr + " label='Near Plane' step=0.1 min=0").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->farPlane, (defStr + " label='Far Plane' step=0.5 min=0").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->shadowExp, (defStr + " label='Shadow Exponent' step=0.1").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->shadowFov, (defStr + " label='Shadow FOV' step=0.01").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_INT32, &light->GetLightAttribute()->filterWidth, (defStr + " label='Shadow Softness' min=0 max=50").c_str());
 
     TwType shadowTypeEnumType = TwDefineEnumFromString(nullptr, "No Shadow,Hard Shadow,Soft Shadow");
     TwAddVarRW(editorCache, nullptr, shadowTypeEnumType, &light->GetLightAttribute()->shadowType, (defStr + " label='Shadow Type'").c_str());
-    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->shadowStrength, (defStr + " label='Shadow Strength'").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->shadowStrength, (defStr + " label='Shadow Strength' step=0.01 min=0 max=1 ").c_str());
 
     //bug if (lightType == Graphics::LightType::Directional)
     {
@@ -123,11 +128,11 @@ namespace Component
             if (m_attribute->lightType == Graphics::LightType::Directional)
             {//todo shadow
                 //projection = projection.CreateOrthographic(1000, 1000, 1, 1000);
-                projection = projection.CreateProjection( Math::c_Pi*0.1f, 1280, 760, 1, 1000).Transpose();
+                projection = projection.CreateProjection(m_attribute->shadowFov, m_attribute->range, m_attribute->range, m_attribute->nearPlane, m_attribute->farPlane).Transpose();
             }
             else if (m_attribute->lightType == Graphics::LightType::Spot)
             {
-                //TODO add perspective
+                projection = projection.CreateProjection(m_attribute->shadowFov, m_attribute->range, m_attribute->range, m_attribute->nearPlane, m_attribute->farPlane).Transpose();
             }
             else if (m_attribute->lightType == Graphics::LightType::Point)
             {

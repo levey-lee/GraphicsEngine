@@ -42,10 +42,20 @@ namespace Graphics
         std::vector<std::shared_ptr<ShaderProgram> > shaders;
         for (auto& i : shaderFiles)
         {
-            std::shared_ptr<ShaderProgram> program = ShaderProgram::LoadShaderProgram(std::get<0>(i), std::get<1>(i));
-            program->SetUsage(std::get<2>(i));
-            program->Build();
-            shaders.emplace_back(program);
+            if (std::get<2>(i) == ShaderUsage::ComputeShader)
+            {
+                std::shared_ptr<ShaderProgram> program = ShaderProgram::LoadOtherShaderProgram(std::get<0>(i), ShaderUsage::ComputeShader);
+                program->SetUsage(ShaderUsage::ComputeShader);
+                program->Build(ShaderUsage::ComputeShader);
+                shaders.emplace_back(program);
+            }
+            else
+            {
+                std::shared_ptr<ShaderProgram> program = ShaderProgram::LoadShaderProgram(std::get<0>(i), std::get<1>(i));
+                program->SetUsage(std::get<2>(i));
+                program->Build();
+                shaders.emplace_back(program);
+            }
         }
 
         Shader* pshader = new Shader(shaders, true, shaderType);

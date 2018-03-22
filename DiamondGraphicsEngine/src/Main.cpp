@@ -67,7 +67,9 @@ void Initialize(Application* app, void* /*userdata*/)
 
     std::shared_ptr<FramebufferManager> fboManager = g_Graphics->GetFrameBufferManager();
     fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build();
-    fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
+    fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap,1000, 1000)->Build(true);
+    fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurH, 1000, 1000)->Build(true);
+    fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurV, 1000, 1000)->Build(true);
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -120,9 +122,11 @@ void Initialize(Application* app, void* /*userdata*/)
     ShaderType usingShader = ShaderType::UberDeferred;
     shaderManager->LoadShader(usingShader,
     {
-        { "DeferredStage0.vert", "DeferredStage0.frag", ShaderUsage::Regular },
+        { "DeferredStage0.vert", "DeferredStage0.frag", ShaderUsage::RegularVSPS },
         { "DeferredStage1.vert", "DeferredStage1.frag" , ShaderUsage::LightShadowMap },
-        { "DeferredStage2.vert", "DeferredStage2.frag", ShaderUsage::Regular }
+        { "DeferredStage2.vert", "DeferredStage2.frag" , ShaderUsage::RegularVSPS },
+        { "DeferredStage2_1.vert", "DeferredStage2_1.frag" , ShaderUsage::RegularVSPS },
+        { "DeferredStage3.vert", "DeferredStage3.frag", ShaderUsage::RegularVSPS }
     });
 #else
     ShaderType usingShader = ShaderType::UberForward;
@@ -147,7 +151,7 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& plane = g_MainScene.CreateObject(usingShader);
         plane.AddComponent<Renderer>(materialManager->GetMaterial("Plane"), planeMesh);
-        plane.GetComponentRef<Component::Transform>().SetPosition({ 0,-2,-5 }).SetScale({ 1,1,10.02f }).SetRotation({ 0,0,0 });
+        plane.GetComponentRef<Component::Transform>().SetPosition({ 0,-0.98f,-5 }).SetScale({ 0.2f,1,0.2f }).SetRotation({ 0,0,0 });
         plane.SetName("Plane");
 
         Object& golfBall = g_MainScene.CreateObject(usingShader);
@@ -164,6 +168,7 @@ void Initialize(Application* app, void* /*userdata*/)
         camtrans.SetRotation({ 0,0,0 });
         camtrans.SetScale(1000.0f);
         camObj.AddComponent<Camera>(camtrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
+        camObj.GetComponentRef<Camera>().RotateCameraLocal({ -0.2f,0,0 });
         camObj.AddComponent<Skydome>(materialManager->GetMaterial("Skydome"), sphereReversedMesh);
         //camObj.AddComponent<Light>()
         //    .SetLightType(LightType::Directional)
@@ -176,14 +181,15 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& lightObj = g_MainScene.CreateObject(usingShader);
         Component::Transform& lightTrans = lightObj.GetComponentRef<Component::Transform>();
-        lightTrans.SetPosition({2, 2, 2}).SetRotation({ -c_Pi / 6.0f, -c_Pi / 4.0f, -c_Pi / 4.0f });
+        lightTrans.SetPosition({0,10,-2}).SetRotation({ -c_Pi / 2.0f, 0, 0});
         //lightTrans.SetPosition({ 0,1.75f, 2 });
-        //lightObj.AddComponent<Camera>(lightTrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
-        //lightObj.GetComponentRef<Camera>().SetNearPlaneDistance(1.0f);
+        lightObj.AddComponent<Camera>(lightTrans, false, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
+        lightObj.GetComponentRef<Camera>().SetNearPlaneDistance(1.0f);
         lightObj.AddComponent<Light>()
-            .SetLightType(LightType::Directional)
-            ->SetAmbientColor(Color(0.1f, 0.1f, 0.1f))
-            ->SetSpecularColor(Color(0.2f, 0.2f, 0.2f))
+            .SetLightType(LightType::Spot)
+            ->SetAmbientColor(Color(0,0,0))
+            ->SetSpecularColor(Color(0.8f, 0.8f, 0.2f))
+            ->SetDistanceAttenuation(0.1f,0.1f,0)
             ->SetShadowType(ShadowType::HardShadow);
         lightObj.SetName("Light");
 

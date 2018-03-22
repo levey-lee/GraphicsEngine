@@ -57,7 +57,7 @@ void Component::Transform::SetShaderParams(std::shared_ptr<Graphics::ShaderProgr
     ////////////////////////////////////////////////////////////////////////////
     //  set transform
     Graphics::ShaderUsage shaderUsage = shader->GetUsage();
-    if (shaderUsage == Graphics::ShaderUsage::Regular)
+    if (shaderUsage == Graphics::ShaderUsage::RegularVSPS)
     {
         Math::Matrix4 const& modelMatrix = GetWorldTransform();
         Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
@@ -69,7 +69,13 @@ void Component::Transform::SetShaderParams(std::shared_ptr<Graphics::ShaderProgr
         Math::Matrix4 viewProj = graphics->GetLightViewProj();
         Math::Matrix4 const& worldTrans = GetWorldTransform();
         Math::Matrix4 mvp = viewProj  *worldTrans;
-        shader->SetUniform("LightMVP", mvp);
+        shader->SetUniform("LightVP", viewProj);
+        shader->SetUniform("ModelMatrix", worldTrans);
+
+        Math::Vec3 lightPos = graphics->GetShadowingLightPos();
+        shader->SetUniform("LightPosition", lightPos);
+
+
         //Math::Matrix4 const& modelMatrix = GetWorldTransform();
         //Math::Matrix4 mvp = graphics->GetViewCamera()->GetViewProjMatrix() * modelMatrix;
         //shader->SetUniform("ModelViewProjectionMatrix", mvp);

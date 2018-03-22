@@ -272,7 +272,34 @@ namespace
   // ShaderProgram::Build explains the concept of linking in greater detail.
   // Call this after calling glLinkProgram.
   static bool VerifyProgramLinking(std::string const &vsFilePath,
-    std::string const &fsFilePath, u32 program)
+      std::string const &fsFilePath, u32 program)
+  {
+      GLint status = GL_TRUE; // assume it succeeded
+      glGetProgramiv(program, GL_LINK_STATUS, &status); // query if it did
+
+      if (status == GL_FALSE) // did it actually?
+      {
+          GLint infoLogLength;
+          std::string infoLog;
+
+          // query the number of characters in the program's info log
+          glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+          infoLog.reserve(infoLogLength); // prime the string to contain the log
+
+                                          // retrieve the info log and save inside a std::string
+          glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
+
+          // warn that something went wrong
+          WarnIf(true, "Error linking program %d (contains vertex shader \"%s\""
+              " and fragment shader \"%s\"): %s", program, vsFilePath.c_str(),
+              fsFilePath.c_str(), infoLog.c_str());
+
+          return false;
+      }
+
+      return true;
+  }
+    static bool VerifyProgramLinking(std::string const &filePath, u32 program)
   {
     GLint status = GL_TRUE; // assume it succeeded
     glGetProgramiv(program, GL_LINK_STATUS, &status); // query if it did
@@ -290,9 +317,7 @@ namespace
       glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
 
       // warn that something went wrong
-      WarnIf(true, "Error linking program %d (contains vertex shader \"%s\""
-        " and fragment shader \"%s\"): %s", program, vsFilePath.c_str(),
-        fsFilePath.c_str(), infoLog.c_str());
+      WarnIf(true, "Error linking program %d (contains shader \"%s\"): %s", program, filePath.c_str(), infoLog.c_str());
 
       return false;
     }
@@ -330,169 +355,268 @@ namespace
 
     return true;
   }
+  static bool VerifyProgramValidation(std::string const &filePath, u32 program)
+  {
+    GLint status = GL_TRUE; // assume success
+    glGetProgramiv(program, GL_VALIDATE_STATUS, &status); // query if it did
+
+    if (status == GL_FALSE) // did it actually?
+    {
+      GLint infoLogLength;
+      std::string infoLog;
+
+      // query the number of characters in the program's info log
+      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+      infoLog.reserve(infoLogLength); // prime the string to contain the log
+
+      // retrieve the info log and save inside a std::string
+      glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
+
+      // warn that something went wrong
+      WarnIf(true, "Error validating program %d (contains shader \"%s\"): %s", program, filePath.c_str(), infoLog.c_str());
+
+      return false;
+    }
+
+    return true;
+  }
 }
 
 namespace Graphics
 {
-  ShaderProgram::ShaderProgram(std::string const &vertexShaderSource,
-    std::string const &fragmentShaderSource,
-    std::string const &vertexShaderPath,
-    std::string const &fragmentShaderPath)
-    : m_program(0), m_vertexShaderSource(vertexShaderSource),
-    m_fragmentShaderSource(fragmentShaderSource),
-    m_vertexShaderPath(vertexShaderPath),
-    m_fragmentShaderPath(fragmentShaderPath)
-  {
-  }
-
-  ShaderProgram::~ShaderProgram()
-  {
-    // cleanup
-    glDeleteProgram(m_program);
-  }
-
-  bool ShaderProgram::HasUniform(std::string const &name) const
-  {
-    Assert(m_program != 0, "Cannot get uniform from unbuilt shader: %s",
-      name.c_str());
-    // try to find the uniform in a map before calling glGetUniformLocation;
-    // this avoids calls to glGetUniformLocation which is considered slow
-    auto find = m_uniforms.find(name);
-    if (find != m_uniforms.end())
-      return true;
-    return glGetUniformLocation(m_program, name.c_str()) != -1;
-  }
-
-  bool ShaderProgram::HasAttribute(std::string const &name) const
-  {
-    Assert(m_program != 0, "Cannot get attribute from unbuilt shader: %s",
-      name.c_str());
-    // try to find the attribute in a map before calling glGetAttribLocation;
-    // this avoids calls to glGetAttribLocation which is considered slow
-    auto find = m_attributes.find(name);
-    if (find != m_attributes.end())
-      return true;
-    return glGetAttribLocation(m_program, name.c_str()) != -1;
-  }
-
-  u32 ShaderProgram::GetUniform(std::string const &name)
-  {
-    Assert(m_program != 0, "Cannot get uniform from unbuilt shader: %s",
-      name.c_str());
-
-    // First tries to find the uniform in the uniforms_ map; if it cannot be
-    // found, it then gets the location from OpenGL and saves it in the map to
-    // avoid ever needing to call glGetUniformLocation again.
-    auto find = m_uniforms.find(name);
-    u32 location;
-    if (find == m_uniforms.end())
+    void ShaderProgram::Validate() const
     {
-      s32 slocation = glGetUniformLocation(m_program, name.c_str());
-      WarnIf(slocation == -1, "No uniform in program by name:  \"%s\"  , or it is set but not used.", name.c_str());
-      location = static_cast<u32>(slocation);
-      m_uniforms.insert(std::make_pair(name, location));
+        glValidateProgram(m_program);
     }
-    else
-      location = find->second;
-    return location;
-  }
 
-  u32 ShaderProgram::GetAttribute(std::string const &name)
-  {
-    Assert(m_program != 0, "Cannot get attribute from unbuilt shader: %s",
-      name.c_str());
-
-    // First tries to find the uniform in the attributes_ map; if it cannot be
-    // found, it then gets the location from OpenGL and saves it in the map to
-    // avoid ever needing to call glGetAttribLocation again.
-    auto find = m_attributes.find(name);
-    u32 location;
-    if (find == m_attributes.end())
+    ShaderProgram::ShaderProgram(std::string const &vertexShaderSource,
+        std::string const &fragmentShaderSource,
+        std::string const &vertexShaderPath,
+        std::string const &fragmentShaderPath)
+        : m_program(0), m_vertexShaderSource(vertexShaderSource),
+        m_fragmentShaderSource(fragmentShaderSource),
+        m_vertexShaderPath(vertexShaderPath),
+        m_fragmentShaderPath(fragmentShaderPath)
     {
-      s32 sloc = glGetAttribLocation(m_program, name.c_str());
-      Assert(sloc != -1, "No attribute in program by name: %s", name.c_str());
-      location = static_cast<u32>(sloc);
-      m_attributes.insert(std::make_pair(name, location));
     }
-    else
-      location = find->second;
-    return location;
-  }
 
-  void ShaderProgram::Build()
-  {
-    // creates a new shader program; programs represent linked and compiled
-    // shaders and are used to actually render geometry
-    u32 program = glCreateProgram();
+    ShaderProgram::ShaderProgram(std::string const& shaderSource, std::string const& shaderPath)
+        : m_program(0), m_otherShaderSource(shaderSource),
+        m_otherShaderPath(shaderPath)
+    {
+    }
 
-    // create a shader object for both vertex and fragment shaders
-    u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    Assert(program != 0, "Error creating shader program.");
-    Assert(vertexShader != 0, "Error creating vertex shader.");
-    Assert(fragmentShader != 0, "Error creating fragment shader.");
+    ShaderProgram::~ShaderProgram()
+    {
+        // cleanup
+        glDeleteProgram(m_program);
+    }
 
-    char const *vshader = m_vertexShaderSource.c_str();
-    GLint vshaderLength = m_vertexShaderSource.length();
-    char const *fshader = m_fragmentShaderSource.c_str();
-    GLint fshaderLength = m_fragmentShaderSource.length();
+    bool ShaderProgram::HasUniform(std::string const &name) const
+    {
+        Assert(m_program != 0, "Cannot get uniform from unbuilt shader: %s",
+            name.c_str());
+        // try to find the uniform in a map before calling glGetUniformLocation;
+        // this avoids calls to glGetUniformLocation which is considered slow
+        auto find = m_uniforms.find(name);
+        if (find != m_uniforms.end())
+            return true;
+        return glGetUniformLocation(m_program, name.c_str()) != -1;
+    }
 
-    // upload the shader source code to the graphics driver
-    glShaderSource(vertexShader, 1, &vshader, &vshaderLength);
-    glShaderSource(fragmentShader, 1, &fshader, &fshaderLength);
+    bool ShaderProgram::HasAttribute(std::string const &name) const
+    {
+        Assert(m_program != 0, "Cannot get attribute from unbuilt shader: %s",
+            name.c_str());
+        // try to find the attribute in a map before calling glGetAttribLocation;
+        // this avoids calls to glGetAttribLocation which is considered slow
+        auto find = m_attributes.find(name);
+        if (find != m_attributes.end())
+            return true;
+        return glGetAttribLocation(m_program, name.c_str()) != -1;
+    }
 
-    // compile and verify the vertex shader
-    glCompileShader(vertexShader);
-    VerifyShaderCompilation(m_vertexShaderPath, vertexShader);
+    u32 ShaderProgram::GetUniform(std::string const &name)
+    {
+        Assert(m_program != 0, "Cannot get uniform from unbuilt shader: %s",
+            name.c_str());
 
-    // compile and verify the fragment shader
-    glCompileShader(fragmentShader);
-    VerifyShaderCompilation(m_fragmentShaderPath, fragmentShader);
+        // First tries to find the uniform in the uniforms_ map; if it cannot be
+        // found, it then gets the location from OpenGL and saves it in the map to
+        // avoid ever needing to call glGetUniformLocation again.
+        auto find = m_uniforms.find(name);
+        u32 location;
+        if (find == m_uniforms.end())
+        {
+            s32 slocation = glGetUniformLocation(m_program, name.c_str());
+            WarnIf(slocation == -1, "No uniform in program by name:  \"%s\"  , or it is set but not used.", name.c_str());
+            location = static_cast<u32>(slocation);
+            m_uniforms.insert(std::make_pair(name, location));
+        }
+        else
+            location = find->second;
+        return location;
+    }
 
-    // attach the compiled shaders to the program
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
+    u32 ShaderProgram::GetAttribute(std::string const &name)
+    {
+        Assert(m_program != 0, "Cannot get attribute from unbuilt shader: %s",
+            name.c_str());
 
-    // link the program together so that it can be used to render
-    glLinkProgram(program);
-    VerifyProgramLinking(m_vertexShaderPath, m_fragmentShaderPath, program);
+        // First tries to find the uniform in the attributes_ map; if it cannot be
+        // found, it then gets the location from OpenGL and saves it in the map to
+        // avoid ever needing to call glGetAttribLocation again.
+        auto find = m_attributes.find(name);
+        u32 location;
+        if (find == m_attributes.end())
+        {
+            s32 sloc = glGetAttribLocation(m_program, name.c_str());
+            Assert(sloc != -1, "No attribute in program by name: %s", name.c_str());
+            location = static_cast<u32>(sloc);
+            m_attributes.insert(std::make_pair(name, location));
+        }
+        else
+            location = find->second;
+        return location;
+    }
 
-    // validate the program is operational in the current OpenGL state
-    //BUG glValidateProgram(program);
-    VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, program);
+    void ShaderProgram::Build()
+    {
+        // creates a new shader program; programs represent linked and compiled
+        // shaders and are used to actually render geometry
+        u32 program = glCreateProgram();
 
-    // Per the OpenGL specification, it is not required to hold on to these
-    // shader objects for the lifetime of the program. Therefore, we clean up
-    // their resources and only hold onto the compiled, linked, and complete
-    // program.
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+        // create a shader object for both vertex and fragment shaders
+        u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        Assert(program != 0, "Error creating shader program.");
+        Assert(vertexShader != 0, "Error creating vertex shader.");
+        Assert(fragmentShader != 0, "Error creating fragment shader.");
 
-    m_program = program;
-  }
+        char const *vshader = m_vertexShaderSource.c_str();
+        GLint vshaderLength = m_vertexShaderSource.length();
+        char const *fshader = m_fragmentShaderSource.c_str();
+        GLint fshaderLength = m_fragmentShaderSource.length();
 
-  void ShaderProgram::Bind() const
-  {
-    Assert(m_program != 0, "Cannot bind unbuilt shader.");
+        // upload the shader source code to the graphics driver
+        glShaderSource(vertexShader, 1, &vshader, &vshaderLength);
+        glShaderSource(fragmentShader, 1, &fshader, &fshaderLength);
 
-    // indicate to OpenGL we want to use this program to render geometry or
-    // set uniforms
-    glUseProgram(m_program);
+        // compile and verify the vertex shader
+        glCompileShader(vertexShader);
+        VerifyShaderCompilation(m_vertexShaderPath, vertexShader);
 
-    // ensure we can use this program in the current OpenGL context
+        // compile and verify the fragment shader
+        glCompileShader(fragmentShader);
+        VerifyShaderCompilation(m_fragmentShaderPath, fragmentShader);
+
+        // attach the compiled shaders to the program
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+
+        // link the program together so that it can be used to render
+        glLinkProgram(program);
+        VerifyProgramLinking(m_vertexShaderPath, m_fragmentShaderPath, program);
+
+        // validate the program is operational in the current OpenGL state
+        //BUG glValidateProgram(program);
+        VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, program);
+
+        // Per the OpenGL specification, it is not required to hold on to these
+        // shader objects for the lifetime of the program. Therefore, we clean up
+        // their resources and only hold onto the compiled, linked, and complete
+        // program.
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        m_program = program;
+    }
+
+    void ShaderProgram::Build(ShaderUsage usage)
+    {
+        if (usage == ShaderUsage::RegularVSPS)
+            return Build();
+
+        if (usage == ShaderUsage::ComputeShader)
+        {
+#if 0//TODO ComputeShader
+            u32 program = glCreateProgram();
+
+
+            u32 computeShader = glCreateShader(GL_COMPUTE_SHADER);
+            Assert(program != 0, "Error creating compute shader program.");
+            Assert(computeShader != 0, "Error creating compute shader.");
+
+            char const *cshader = m_otherShaderSource.c_str();
+            GLint cshaderLength = m_otherShaderSource.length();
+
+            // upload the shader source code to the graphics driver
+            glShaderSource(computeShader, 1, &cshader, &cshaderLength);
+
+
+            glCompileShader(computeShader);
+            VerifyShaderCompilation(m_otherShaderPath, computeShader);
+
+            // attach the compiled shaders to the program
+            glAttachShader(program, computeShader);
+
+            // link the program together so that it can be used to render
+            glLinkProgram(program);
+
+            glUseProgram(program);
+            glDispatchCompute();
+
+
+
+            VerifyProgramLinking(m_otherShaderPath, program);
+
+            // validate the program is operational in the current OpenGL state
+
+            VerifyProgramValidation(m_otherShaderPath, program);
+
+            // Per the OpenGL specification, it is not required to hold on to these
+            // shader objects for the lifetime of the program. Therefore, we clean up
+            // their resources and only hold onto the compiled, linked, and complete
+            // program.
+            glDeleteShader(computeShader);
+
+            m_program = program;
+            CheckGL();
+
+#endif // 0
+
+        }
+
+    }
+
+    void ShaderProgram::Bind() const
+    {
+        Assert(m_program != 0, "Cannot bind unbuilt shader.");
+
+        // indicate to OpenGL we want to use this program to render geometry or
+        // set uniforms
+        glUseProgram(m_program);
+
+        // ensure we can use this program in the current OpenGL context
 #ifdef _DEBUG
-    //BUG glValidateProgram(m_program);
-    VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, m_program);
+        if (m_usage == ShaderUsage::ComputeShader)
+        {
+            VerifyProgramValidation(m_otherShaderPath, m_program);
+        }
+        else
+        {
+            VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, m_program);
+        }
 #endif
-  }
+    }
 
-  void ShaderProgram::SetUniform(std::string const &name,
-    Math::Vector4 const &vector)
-  {
-    // glUniform4fv sets a vec4 using an array of floats
-    u32 location = GetUniform(name);
-    glUniform4fv(location, 1, vector.ToFloats());
-  }
+    void ShaderProgram::SetUniform(std::string const &name,
+        Math::Vector4 const &vector)
+    {
+        // glUniform4fv sets a vec4 using an array of floats
+        u32 location = GetUniform(name);
+        glUniform4fv(location, 1, vector.ToFloats());
+    }
 
     void ShaderProgram::SetUniform(std::string const& name, Math::Vector3 const& vector)
     {
@@ -509,50 +633,58 @@ namespace Graphics
     }
 
     void ShaderProgram::SetUniform(std::string const &name,
-    Math::Matrix4 const &matrix)
-  {
-    // glUniformMatrix4f sets a 4x4 matrix using an array of floats; GL_TRUE
-    // indicates to transpose the matrix upon upload to the GPU
-    u32 location = GetUniform(name);
-    glUniformMatrix4fv(location, 1, GL_TRUE, matrix.array);
-  }
+        Math::Matrix4 const &matrix)
+    {
+        // glUniformMatrix4f sets a 4x4 matrix using an array of floats; GL_TRUE
+        // indicates to transpose the matrix upon upload to the GPU
+        u32 location = GetUniform(name);
+        glUniformMatrix4fv(location, 1, GL_TRUE, matrix.array);
+    }
 
-  void ShaderProgram::SetUniform(std::string const &name, Color const &color)
-  {
-    // uploads the color to a vec4 using an array of floatss
-    u32 location = GetUniform(name);
-    glUniform4fv(location, 1, color.ToFloats());
-  }
+    void ShaderProgram::SetUniform(std::string const &name, Color const &color)
+    {
+        // uploads the color to a vec4 using an array of floatss
+        u32 location = GetUniform(name);
+        glUniform4fv(location, 1, color.ToFloats());
+    }
 
-  void ShaderProgram::SetUniform(std::string const &name, f32 value)
-  {
-    // uploads the raw float value to the GPU
-    u32 location = GetUniform(name);
-    glUniform1f(location, value);
-  }
+    void ShaderProgram::SetUniform(std::string const &name, f32 value)
+    {
+        // uploads the raw float value to the GPU
+        u32 location = GetUniform(name);
+        glUniform1f(location, value);
+    }
 
-  void ShaderProgram::SetUniform(std::string const &name, int value)
-  {
-    // uploads the raw integer value to the GPU
-    u32 location = GetUniform(name);
-    glUniform1i(location, value);
-  }
+    void ShaderProgram::SetUniform(std::string const &name, int value)
+    {
+        // uploads the raw integer value to the GPU
+        u32 location = GetUniform(name);
+        glUniform1i(location, value);
+    }
 
-  void ShaderProgram::Unbind() const
-  {
-    // indicates to the driver not to use any program to render currently by
-    // using the special reserved program handle 0
-    glUseProgram(NULL);
-  }
+    void ShaderProgram::Unbind() const
+    {
+        // indicates to the driver not to use any program to render currently by
+        // using the special reserved program handle 0
+        glUseProgram(NULL);
+    }
 
-  std::shared_ptr<ShaderProgram> ShaderProgram::LoadShaderProgram(
-    std::string const &vertexShaderPath,
-    std::string const &fragmentShaderPath)
-  {
-    // construct a new shader program by reading in the vertex and fragment
-    // shader files
-    return std::shared_ptr<ShaderProgram>(new ShaderProgram(
-      ReadFile(vertexShaderPath), ReadFile(fragmentShaderPath),
-      vertexShaderPath, fragmentShaderPath));
-  }
+    std::shared_ptr<ShaderProgram> ShaderProgram::LoadShaderProgram(
+        std::string const &vertexShaderPath,
+        std::string const &fragmentShaderPath)
+    {
+        // construct a new shader program by reading in the vertex and fragment
+        // shader files
+        return std::shared_ptr<ShaderProgram>(new ShaderProgram(
+            ReadFile(vertexShaderPath), ReadFile(fragmentShaderPath),
+            vertexShaderPath, fragmentShaderPath));
+    }
+
+    std::shared_ptr<ShaderProgram> ShaderProgram::LoadOtherShaderProgram(std::string const& shaderPath,
+        ShaderUsage usage)
+    {
+        auto newShader = std::shared_ptr<ShaderProgram>(new ShaderProgram(ReadFile(shaderPath), shaderPath));
+        newShader->SetUsage(usage);
+        return newShader;
+    }
 }

@@ -1,0 +1,576 @@
+#include "Precompiled.h"
+#include "framework/Debug.h"
+#include "framework/Utilities.h"
+#include "graphics/Color.h"
+#include "graphics/ShaderProgram.h"
+#include "math/Matrix4.h"
+#include "math/Vector4.h"
+
+namespace
+{
+  // Converts the relative path to a useful relative path (based on the local
+  // directory of the executable). This assumes ASSET_PATH is correct.
+  static std::string GetFilePath(std::string const &relativePath)
+  {
+    std::stringstream strstr;
+    strstr << ASSET_PATH << "shaders/" << relativePath;
+    return strstr.str();
+  }
+
+  // Performs a very inefficient (but conveniently small) way of reading the
+  // entire shader text file as a string.
+  static std::string ReadFile(std::string const &relativePath)
+  {
+#if ASSIGNMENT_1_HIDE_SHADER
+      if (relativePath == "shader.vert")
+      {
+          std::string shaderStr =                                                                       
+              "#version 430 core                                                                        \n\
+                                                                                                        \n\
+                                                                                                        \n\
+              // These two must perfectly match the structure defined in inc/graphics/Vertex.h          \n\
+              layout(location = 0) in vec3 vPosition;                                                   \n\
+          layout(location = 1) in vec3 vNormal;                                                         \n\
+          layout(location = 2) in vec2 vUv;                                                             \n\
+                                                                                                        \n\
+          out vec4 worldNormal;                                                                         \n\
+          out vec3 VertexPosition;                                                                      \n\
+                                                                                                        \n\
+          out vec2 Uv0;//regular uv                                                                     \n\
+          out vec2 Uv1;//fixed border line                                                              \n\
+                                                                                                        \n\
+          uniform mat4 ModelMatrix; // local->world matrix                                              \n\
+          uniform mat4 ModelViewProjectionMatrix; // local->NDC matrix [no camera support]              \n\
+                                                                                                        \n\
+                                                                                                        \n\
+          void main()                                                                                   \n\
+          {                                                                                             \n\
+              VertexPosition = vPosition;                                                               \n\
+              Uv0.x = fract(vUv.x);                                                                     \n\
+              Uv0.y = fract(vUv.y);                                                                     \n\
+                                                                                                        \n\
+              Uv1.x = fract(vUv.x + 0.5f) - 0.5f;                                                       \n\
+              Uv1.y = fract(vUv.y + 0.5f) - 0.5f;                                                       \n\
+                                                                                                        \n\
+              // deal with position and normal in world space                                           \n\
+              vec4 worldPos = ModelMatrix * vec4(vPosition, 1);                                         \n\
+                                                                                                        \n\
+              // vec4(vNormal, 0) because we don't want to translate a normal;                          \n\
+              // NOTE: this code is wrong if we support non-uniform scaling                             \n\
+              worldNormal = normalize(ModelMatrix * vec4(vNormal, 0));                                  \n\
+                                                                                                        \n\
+              // compute the final result of passing this vertex through the transformation             \n\
+              // pipeline and yielding a coordinate in NDC space                                        \n\
+              gl_Position = ModelViewProjectionMatrix * vec4(vPosition, 1);                             \n\
+                                                                                                        \n\
+          }                                                                                             \n\
+          ";
+          return shaderStr;
+      }
+      else if (relativePath == "shader.frag")
+      {
+          std::string shaderStr =
+              "#version 430 core                                                                                          \n\
+                                                                                                                          \n\
+#define MaxLights 128 // maximum possible lights this shader supports                                                     \n\
+#define LIGHT_TYPE_DIRECTIONAL 0                                                                                          \n\
+#define LIGHT_TYPE_POINT 1                                                                                                \n\
+#define LIGHT_TYPE_SPOT 2                                                                                                 \n\
+                                                                                                                          \n\
+              in vec4 worldNormal;                                                                                        \n\
+          in vec3 VertexPosition;                                                                                         \n\
+          in vec2 Uv0;//regular uv                                                                                        \n\
+          in vec2 Uv1;//fixed border line                                                                                 \n\
+                                                                                                                          \n\
+          layout(location = 0) out vec4 vFragColor;                                                                       \n\
+                                                                                                                          \n\
+                                                                                                                          \n\
+          // only support directional lights for now                                                                      \n\
+          struct Light                                                                                                    \n\
+          {                                                                                                               \n\
+              bool isActive;                                                                                              \n\
+              vec4 direction; // direction the light is directed                                                          \n\
+              vec4 ambient; // ambient light cast onto objects                                                            \n\
+              vec4 diffuse; // diffuse light cast onto objects                                                            \n\
+              vec4 specular;                                                                                              \n\
+              int type;                                                                                                   \n\
+              vec3 distanceAttenuation;                                                                                   \n\
+          };                                                                                                              \n\
+                                                                                                                          \n\
+          uniform Light Lights[MaxLights]; // support UP TO 128 lights                                                    \n\
+          uniform int LightCount; // number of lights enabled THIS ROUND                                                  \n\
+                                                                                                                          \n\
+                                  // represents material properties of the surface passed by the application              \n\
+          uniform struct                                                                                                  \n\
+          {                                                                                                               \n\
+              bool ReceiveLight;                                                                                          \n\
+              vec4 AmbientColor; // ambient color of the surface/how much ambient light to absorb                         \n\
+              vec4 DiffuseColor; // diffuse color of the surface/how much diffuse light to absorb                         \n\
+              vec4 EmissiveColor;                                                                                         \n\
+              vec4 SpecularColor;                                                                                         \n\
+              vec4 SpecularExponent;                                                                                      \n\
+                                                                                                                          \n\
+              bool DiffuseTextureEnabled;                                                                                 \n\
+              bool SpecularTextureEnabled;                                                                                \n\
+              bool NormalMapTextureEnabled;                                                                               \n\
+              sampler2D DiffuseTexture;                                                                                   \n\
+              sampler2D SpecularTexture;                                                                                  \n\
+              sampler2D NormalMapTexture;                                                                                 \n\
+          } Material;                                                                                                     \n\
+                                                                                                                          \n\
+          vec2 computeBoxUV()                                                                                             \n\
+          {                                                                                                               \n\
+              // pick UV based on maximal extents (this is not used in CS300 assignment 2,                                \n\
+              // it's merely another way to generate UVs)...only allow comps in [-1, 1]                                   \n\
+              vec3 position = clamp(VertexPosition.xyz, vec3(-1), vec3(1));                                               \n\
+                                                                                                                          \n\
+              // find largest standard basis bias                                                                         \n\
+              vec3 mag = abs(position);                                                                                   \n\
+              vec3 biasUVs = vec3(0.5) + 0.5 * position;                                                                  \n\
+              if (mag.x > mag.y && mag.x > mag.z)                                                                         \n\
+              {                                                                                                           \n\
+                  // facing pos or neg x axis; use corrected y/z for UV                                                   \n\
+                  return biasUVs.yz;                                                                                      \n\
+              }                                                                                                           \n\
+              else if (mag.y > mag.z)                                                                                     \n\
+              {                                                                                                           \n\
+                  // facing pos or neg y axis; use corrected x/z for UV                                                   \n\
+                  return biasUVs.xz;                                                                                      \n\
+              }                                                                                                           \n\
+              else // z is the largest                                                                                    \n\
+              {                                                                                                           \n\
+                  // facing pos or neg z axis; use corrected x/y for UV                                                   \n\
+                  return biasUVs.xy;                                                                                      \n\
+              }                                                                                                           \n\
+          }                                                                                                               \n\
+          vec4 computeLightingTerm(in int lightIdx, in vec4 worldNormal)                                                  \n\
+          {                                                                                                               \n\
+              // grab light                                                                                               \n\
+              Light light = Lights[lightIdx];                                                                             \n\
+                                                                                                                          \n\
+              if (light.isActive == false)                                                                                \n\
+                  return vec4(0, 0, 0, 1);                                                                                \n\
+              // light vector points from the surface toward the light (opposite light dir.)                              \n\
+              vec4 lightVec = normalize(-light.direction);                                                                \n\
+                                                                                                                          \n\
+              // ambient contribution from the light is always constant                                                   \n\
+              vec4 ambient = light.ambient * Material.AmbientColor;                                                       \n\
+                                                                                                                          \n\
+              // initially, diffuse contribution is black                                                                 \n\
+              vec4 diffuse = vec4(0); // same as vec4(0, 0, 0, 0), or black                                               \n\
+                                                                                                                          \n\
+                                      // compute the Lambertian term                                                      \n\
+              float diffuseFactor = dot(worldNormal, lightVec);                                                           \n\
+                                                                                                                          \n\
+              if (diffuseFactor > 0) // is there a diffuse contribution?                                                  \n\
+              {                                                                                                           \n\
+                  // compute diffuse contribution on the surface                                                          \n\
+                  diffuse = diffuseFactor * light.diffuse * Material.DiffuseColor;                                        \n\
+              }                                                                                                           \n\
+              return ambient + diffuse + Material.EmissiveColor; // total contribution from this light                    \n\
+          }                                                                                                               \n\
+                                                                                                                          \n\
+          vec4 computeSurfaceColor(in vec4 worldNormal)                                                                   \n\
+          {                                                                                                               \n\
+              // Phong: total contribution of light is sum of all individual light contribs.                              \n\
+              vec4 color = vec4(0, 0, 0, 0); // no light = black                                                          \n\
+              for (int i = 0; i < LightCount; ++i)                                                                        \n\
+                  color += computeLightingTerm(i, worldNormal); // contribution of light i                                \n\
+              return color; // contribution from all lights onto surface                                                  \n\
+          }                                                                                                               \n\
+                                                                                                                          \n\
+                                                                                                                          \n\
+          void main()                                                                                                     \n\
+          {                                                                                                               \n\
+              vec4 lightColor;                                                                                            \n\
+              vec4 textureColor;                                                                                          \n\
+              vec4 materialColor = Material.AmbientColor + Material.DiffuseColor + Material.EmissiveColor;                \n\
+              vec2 uv;                                                                                                    \n\
+              uv.x = (fwidth(Uv0.x) < fwidth(Uv1.x) - 0.001f) ? Uv0.x : Uv1.x;                                            \n\
+              uv.y = (fwidth(Uv0.y) < fwidth(Uv1.y) - 0.001f) ? Uv0.y : Uv1.y;                                            \n\
+                                                                                                                          \n\
+              lightColor = Material.ReceiveLight ? computeSurfaceColor(worldNormal) : materialColor;                      \n\
+              textureColor = Material.DiffuseTextureEnabled ? texture(Material.DiffuseTexture, uv) : materialColor;       \n\
+              //for now I use specular texture as a diffuse texture so                                                    \n\
+              //that you can see they blend.                                                                              \n\
+              //multiplicative blending.                                                                                  \n\
+              if (Material.SpecularTextureEnabled)                                                                        \n\
+                  textureColor *= texture(Material.SpecularTexture, uv);                                                  \n\
+                                                                                                                          \n\
+              vFragColor = lightColor*textureColor;                                                                       \n\
+          }"
+          ;
+          return shaderStr;
+      }
+      else
+      {
+          std::string file = GetFilePath(relativePath);
+          std::ifstream fstream = std::ifstream(file);
+          Assert(fstream.good(), "Failed to read file: %s", file.c_str());
+
+          // convenient (but slow) way of reading an entire file into a string
+          return std::string(std::istreambuf_iterator<char>(fstream),
+              std::istreambuf_iterator<char>());
+
+      }
+
+
+
+
+
+
+
+
+
+
+#else
+    std::string file = GetFilePath(relativePath);
+    std::ifstream fstream = std::ifstream(file);
+    Assert(fstream.good(), "Failed to read file: %s", file.c_str());
+
+    // convenient (but slow) way of reading an entire file into a string
+    return std::string(std::istreambuf_iterator<char>(fstream),
+      std::istreambuf_iterator<char>());
+#endif
+  }
+
+  // Verifies that the shader has compiled successfully. If anything went wrong,
+  // it will warn with the message provided by the graphics driver. Each
+  // shader object (and including the program object) contains an info log based
+  // on compile and link operations. This is a very handy method to keep around
+  // when you want to receive error messages for compiler errors in your
+  // shaders. Call this after calling glCompileShader.
+  static bool VerifyShaderCompilation(std::string const &filePath, u32 shader)
+  {
+    GLint status = GL_TRUE; // assume it succeeded
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status); // query if it did
+
+    if (status == GL_FALSE) // did it actually?
+    {
+      GLint infoLogLength; 
+      std::string infoLog;
+
+      // get the number of characters stored inside the shader's info log
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
+      infoLog.reserve(infoLogLength); // prime string to contain the log
+
+      // retrieve the info log and save inside a std::string
+      glGetShaderInfoLog(shader, infoLogLength, nullptr, &infoLog[0]);
+
+      // warn that something went wrong
+      WarnIf(true, "Error compiling shader \"%s\":\n%s",
+        filePath.c_str(), infoLog.c_str());
+
+      return false;
+    }
+
+    return true;
+  }
+
+  // Similar to VerifyShaderCompilation, except it makes sure the entire shader
+  // program successfully linked together all shader objects attached to it.
+  // ShaderProgram::Build explains the concept of linking in greater detail.
+  // Call this after calling glLinkProgram.
+  static bool VerifyProgramLinking(std::string const &vsFilePath,
+    std::string const &fsFilePath, u32 program)
+  {
+    GLint status = GL_TRUE; // assume it succeeded
+    glGetProgramiv(program, GL_LINK_STATUS, &status); // query if it did
+
+    if (status == GL_FALSE) // did it actually?
+    {
+      GLint infoLogLength;
+      std::string infoLog;
+
+      // query the number of characters in the program's info log
+      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+      infoLog.reserve(infoLogLength); // prime the string to contain the log
+
+      // retrieve the info log and save inside a std::string
+      glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
+
+      // warn that something went wrong
+      WarnIf(true, "Error linking program %d (contains vertex shader \"%s\""
+        " and fragment shader \"%s\"): %s", program, vsFilePath.c_str(),
+        fsFilePath.c_str(), infoLog.c_str());
+
+      return false;
+    }
+
+    return true;
+  }
+
+  // Similar to VerifyProgramLinking. Operates on ShaderPrograms. Call this
+  // after calling glValidateProgram.
+  static bool VerifyProgramValidation(std::string const &vsFilePath,
+    std::string const &fsFilePath, u32 program)
+  {
+    GLint status = GL_TRUE; // assume success
+    glGetProgramiv(program, GL_VALIDATE_STATUS, &status); // query if it did
+
+    if (status == GL_FALSE) // did it actually?
+    {
+      GLint infoLogLength;
+      std::string infoLog;
+
+      // query the number of characters in the program's info log
+      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+      infoLog.reserve(infoLogLength); // prime the string to contain the log
+
+      // retrieve the info log and save inside a std::string
+      glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
+
+      // warn that something went wrong
+      WarnIf(true, "Error validating program %d (contains vertex shader \"%s\""
+        " and fragment shader \"%s\"): %s", program, vsFilePath.c_str(),
+        fsFilePath.c_str(), infoLog.c_str());
+
+      return false;
+    }
+
+    return true;
+  }
+}
+
+namespace Graphics
+{
+    void ShaderProgram::Validate() const
+    {
+        glValidateProgram(m_program);
+    }
+
+    ShaderProgram::ShaderProgram(std::string const &vertexShaderSource,
+        std::string const &fragmentShaderSource,
+        std::string const &vertexShaderPath,
+        std::string const &fragmentShaderPath)
+        : m_program(0), m_vertexShaderSource(vertexShaderSource),
+        m_fragmentShaderSource(fragmentShaderSource),
+        m_vertexShaderPath(vertexShaderPath),
+        m_fragmentShaderPath(fragmentShaderPath)
+    {
+    }
+
+    ShaderProgram::ShaderProgram(std::string const& shaderSource, std::string const& shaderPath)
+        : m_program(0), m_otherShaderSource(shaderSource),
+        m_otherShaderPath(shaderPath)
+    {
+    }
+
+    ShaderProgram::~ShaderProgram()
+    {
+        // cleanup
+        glDeleteProgram(m_program);
+    }
+
+    bool ShaderProgram::HasUniform(std::string const &name) const
+    {
+        Assert(m_program != 0, "Cannot get uniform from unbuilt shader: %s",
+            name.c_str());
+        // try to find the uniform in a map before calling glGetUniformLocation;
+        // this avoids calls to glGetUniformLocation which is considered slow
+        auto find = m_uniforms.find(name);
+        if (find != m_uniforms.end())
+            return true;
+        return glGetUniformLocation(m_program, name.c_str()) != -1;
+    }
+
+    bool ShaderProgram::HasAttribute(std::string const &name) const
+    {
+        Assert(m_program != 0, "Cannot get attribute from unbuilt shader: %s",
+            name.c_str());
+        // try to find the attribute in a map before calling glGetAttribLocation;
+        // this avoids calls to glGetAttribLocation which is considered slow
+        auto find = m_attributes.find(name);
+        if (find != m_attributes.end())
+            return true;
+        return glGetAttribLocation(m_program, name.c_str()) != -1;
+    }
+
+    u32 ShaderProgram::GetUniform(std::string const &name)
+    {
+        Assert(m_program != 0, "Cannot get uniform from unbuilt shader: %s",
+            name.c_str());
+
+        // First tries to find the uniform in the uniforms_ map; if it cannot be
+        // found, it then gets the location from OpenGL and saves it in the map to
+        // avoid ever needing to call glGetUniformLocation again.
+        auto find = m_uniforms.find(name);
+        u32 location;
+        if (find == m_uniforms.end())
+        {
+            s32 slocation = glGetUniformLocation(m_program, name.c_str());
+            WarnIf(slocation == -1, "No uniform in program by name:  \"%s\"  , or it is set but not used.", name.c_str());
+            location = static_cast<u32>(slocation);
+            m_uniforms.insert(std::make_pair(name, location));
+        }
+        else
+            location = find->second;
+        return location;
+    }
+
+    u32 ShaderProgram::GetAttribute(std::string const &name)
+    {
+        Assert(m_program != 0, "Cannot get attribute from unbuilt shader: %s",
+            name.c_str());
+
+        // First tries to find the uniform in the attributes_ map; if it cannot be
+        // found, it then gets the location from OpenGL and saves it in the map to
+        // avoid ever needing to call glGetAttribLocation again.
+        auto find = m_attributes.find(name);
+        u32 location;
+        if (find == m_attributes.end())
+        {
+            s32 sloc = glGetAttribLocation(m_program, name.c_str());
+            Assert(sloc != -1, "No attribute in program by name: %s", name.c_str());
+            location = static_cast<u32>(sloc);
+            m_attributes.insert(std::make_pair(name, location));
+        }
+        else
+            location = find->second;
+        return location;
+    }
+
+    void ShaderProgram::Build()
+    {
+        // creates a new shader program; programs represent linked and compiled
+        // shaders and are used to actually render geometry
+        u32 program = glCreateProgram();
+
+        // create a shader object for both vertex and fragment shaders
+        u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        Assert(program != 0, "Error creating shader program.");
+        Assert(vertexShader != 0, "Error creating vertex shader.");
+        Assert(fragmentShader != 0, "Error creating fragment shader.");
+
+        char const *vshader = m_vertexShaderSource.c_str();
+        GLint vshaderLength = m_vertexShaderSource.length();
+        char const *fshader = m_fragmentShaderSource.c_str();
+        GLint fshaderLength = m_fragmentShaderSource.length();
+
+        // upload the shader source code to the graphics driver
+        glShaderSource(vertexShader, 1, &vshader, &vshaderLength);
+        glShaderSource(fragmentShader, 1, &fshader, &fshaderLength);
+
+        // compile and verify the vertex shader
+        glCompileShader(vertexShader);
+        VerifyShaderCompilation(m_vertexShaderPath, vertexShader);
+
+        // compile and verify the fragment shader
+        glCompileShader(fragmentShader);
+        VerifyShaderCompilation(m_fragmentShaderPath, fragmentShader);
+
+        // attach the compiled shaders to the program
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+
+        // link the program together so that it can be used to render
+        glLinkProgram(program);
+        VerifyProgramLinking(m_vertexShaderPath, m_fragmentShaderPath, program);
+
+        // validate the program is operational in the current OpenGL state
+        //BUG glValidateProgram(program);
+        VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, program);
+
+        // Per the OpenGL specification, it is not required to hold on to these
+        // shader objects for the lifetime of the program. Therefore, we clean up
+        // their resources and only hold onto the compiled, linked, and complete
+        // program.
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        m_program = program;
+    }
+
+    void ShaderProgram::Bind() const
+    {
+        Assert(m_program != 0, "Cannot bind unbuilt shader.");
+
+        // indicate to OpenGL we want to use this program to render geometry or
+        // set uniforms
+        glUseProgram(m_program);
+
+        // ensure we can use this program in the current OpenGL context
+#ifdef _DEBUG
+        VerifyProgramValidation(m_vertexShaderPath, m_fragmentShaderPath, m_program);
+#endif
+    }
+
+    void ShaderProgram::SetUniform(std::string const &name,
+        Math::Vector4 const &vector)
+    {
+        // glUniform4fv sets a vec4 using an array of floats
+        u32 location = GetUniform(name);
+        glUniform4fv(location, 1, vector.ToFloats());
+    }
+
+    void ShaderProgram::SetUniform(std::string const& name, Math::Vector3 const& vector)
+    {
+        // glUniform4fv sets a vec4 using an array of floats
+        u32 location = GetUniform(name);
+        glUniform3fv(location, 1, vector.ToFloats());
+    }
+
+    void ShaderProgram::SetUniform(std::string const& name, Math::Vector2 const& vector)
+    {
+        // glUniform4fv sets a vec4 using an array of floats
+        u32 location = GetUniform(name);
+        glUniform2fv(location, 1, vector.ToFloats());
+    }
+
+    void ShaderProgram::SetUniform(std::string const &name,
+        Math::Matrix4 const &matrix)
+    {
+        // glUniformMatrix4f sets a 4x4 matrix using an array of floats; GL_TRUE
+        // indicates to transpose the matrix upon upload to the GPU
+        u32 location = GetUniform(name);
+        glUniformMatrix4fv(location, 1, GL_TRUE, matrix.array);
+    }
+
+    void ShaderProgram::SetUniform(std::string const &name, Color const &color)
+    {
+        // uploads the color to a vec4 using an array of floatss
+        u32 location = GetUniform(name);
+        glUniform4fv(location, 1, color.ToFloats());
+    }
+
+    void ShaderProgram::SetUniform(std::string const &name, f32 value)
+    {
+        // uploads the raw float value to the GPU
+        u32 location = GetUniform(name);
+        glUniform1f(location, value);
+    }
+
+    void ShaderProgram::SetUniform(std::string const &name, int value)
+    {
+        // uploads the raw integer value to the GPU
+        u32 location = GetUniform(name);
+        glUniform1i(location, value);
+    }
+
+    void ShaderProgram::Unbind() const
+    {
+        // indicates to the driver not to use any program to render currently by
+        // using the special reserved program handle 0
+        glUseProgram(NULL);
+    }
+
+    std::shared_ptr<ShaderProgram> ShaderProgram::LoadShaderProgram(
+        std::string const &vertexShaderPath,
+        std::string const &fragmentShaderPath)
+    {
+        // construct a new shader program by reading in the vertex and fragment
+        // shader files
+        return std::shared_ptr<ShaderProgram>(new ShaderProgram(
+            ReadFile(vertexShaderPath), ReadFile(fragmentShaderPath),
+            vertexShaderPath, fragmentShaderPath));
+    }
+
+    std::shared_ptr<ShaderProgram> ShaderProgram::LoadOtherShaderProgram(std::string const& shaderPath,
+        ShaderUsage usage)
+    {
+        return std::shared_ptr<ShaderProgram>(new ShaderProgram(
+            ReadFile(vertexShaderPath), ReadFile(fragmentShaderPath),
+            vertexShaderPath, fragmentShaderPath));
+    }
+}

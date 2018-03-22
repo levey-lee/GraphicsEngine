@@ -17,8 +17,9 @@ namespace Graphics
 
     enum class ShaderUsage
     {
-        Regular,
-        LightShadowMap
+        RegularVSPS,
+        LightShadowMap,
+        ComputeShader
     };
 
 
@@ -65,6 +66,7 @@ namespace Graphics
         // program and links them. It finishes with validating the program and
         // cleaning up the shader objects used to construct it.
         void Build();
+        void Build(ShaderUsage usage);
 
         // Binds this shader program for uses including setting uniform constant
         // values and using the program to render geometry.
@@ -109,24 +111,32 @@ namespace Graphics
         static std::shared_ptr<ShaderProgram> LoadShaderProgram(
             std::string const& vertexShaderPath,
             std::string const& fragmentShaderPath);
+        static std::shared_ptr<ShaderProgram> LoadOtherShaderProgram(
+            std::string const& shaderPath, ShaderUsage usage);
+
 
         void SetUsage(ShaderUsage usage) { m_usage = usage; }
         ShaderUsage GetUsage() const { return m_usage; }
 
-    //BUG private:
+        void Validate() const;
+
+    private:
         ShaderProgram(std::string const& vertexShaderSource,
                       std::string const& fragmentShaderSource,
                       std::string const& vertexShaderPath,
                       std::string const& fragmentShaderPath);
 
-        ShaderUsage m_usage = ShaderUsage::Regular;
+        ShaderProgram(std::string const& shaderSource,
+                      std::string const& shaderPath);
+
+        ShaderUsage m_usage = ShaderUsage::RegularVSPS;
 
         u32 m_program; /* OpenGL handle to the ShaderProgram object. */
 
-        std::string m_vertexShaderPath, m_fragmentShaderPath;
+        std::string m_vertexShaderPath, m_fragmentShaderPath, m_otherShaderPath;
 
         /* Actual GLSL source code for the program's vertex and fragment shaders. */
-        std::string m_vertexShaderSource, m_fragmentShaderSource;
+        std::string m_vertexShaderSource, m_fragmentShaderSource, m_otherShaderSource;
 
         /* Cached index maps of the uniforms/attributes that were set and get. */
         std::unordered_map<std::string, u32> m_uniforms, m_attributes;

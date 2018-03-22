@@ -113,7 +113,7 @@ void Component::Renderer::SetShaderParams(std::shared_ptr<Graphics::ShaderProgra
     if (m_material != nullptr)
     {
         Graphics::ShaderUsage shaderUsage = shader->GetUsage();
-        if (shaderUsage == Graphics::ShaderUsage::Regular)
+        if (shaderUsage == Graphics::ShaderUsage::RegularVSPS)
         {
             m_material->SetShaderParameters(shader, g);
         }

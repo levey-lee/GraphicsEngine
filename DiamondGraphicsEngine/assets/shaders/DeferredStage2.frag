@@ -1,241 +1,70 @@
 #version 430 core
 
-#define MaxLights 64 // maximum possible lights this shader supports
-#define LIGHT_TYPE_DIRECTIONAL 0
-#define LIGHT_TYPE_POINT 1
-#define LIGHT_TYPE_SPOT 2
+// Ouput data
+layout(location = 0) out float FilteredDepth;
 
-#define SHADOW_TYPE_NO_SHADOW 0
-#define SHADOW_TYPE_HARD_SHADOW 1
-#define SHADOW_TYPE_SOFT_SHADOW 2
-
-#define DEBUG_OUTPUT_COMBINED 0
-#define DEBUG_OUTPUT_DIFFUSE 1
-#define DEBUG_OUTPUT_WORLD_POSITION 2
-#define DEBUG_OUTPUT_WORLD_NORMAL 3
-#define DEBUG_OUTPUT_SPECULAR_COLOR 4
-#define DEBUG_OUTPUT_DEPTH 5
-#define DEBUG_OUTPUT_SHADOWMAP 6
-
-layout(location = 0) out vec4 vFragColor;
-
-uniform int EnableBlur;
-uniform int BlurStrength;
-uniform int DebugOutputIndex;
 uniform vec2 ScreenDimension;
-uniform vec3 LightPosition;
-uniform sampler2D DiffuseColor_TexU_Texture;
-uniform sampler2D WorldPosition_TexV_Texture;
-uniform sampler2D WorldNormal_ReceiveLight_Texture;
-uniform sampler2D SpecColor_SpecPow_Texture;
-uniform sampler2D Depth_Texture;
-uniform sampler2DShadow ShadowMaps_Texture; 
-uniform mat4 LightViewProj;
-struct Light
-{
-  bool isActive;
-  vec4 position;
-  vec4 direction; // direction the light is directed
-  vec4 ambient;   // ambient light cast onto objects
-  vec4 diffuse;   // diffuse light cast onto objects
-  vec4 specular;
-  int lightType;
-  int shadowType;
-  float shadowStrength;
-  float intensity;
-  vec3 distanceAttenuation;
-};
+uniform sampler2D ShadowMaps_Texture;
+uniform int ShadowFilterWidth;
 
-uniform struct
-{
-  vec3 Position_world;
-  float FarPlaneDist;
-  float NearPlaneDist;
-  vec4 FogColor;
-}Camera;
+//w = 5, 2w+1 = 11
+// const float TotalWeight = 6.09866;
+// const float TotalWeight = 12.09866;
+// const float weights[11] = 
+// {
+// 0.13534/TotalWeight,0.27804/TotalWeight,0.48675/TotalWeight,0.72615/TotalWeight,0.92312/TotalWeight,
+// 1/TotalWeight,
+// 0.92312/TotalWeight,0.72615/TotalWeight,0.48675/TotalWeight,0.27804/TotalWeight,0.13534/TotalWeight
+// }
 
-uniform Light Lights[MaxLights]; // support UP TO 64 lights
-uniform int LightCount; // number of lights enabled THIS ROUND
+;
+#define MAX_WIDTH 50
 
-vec4 DoPointLight(in Light light, in vec4 worldNormal, in vec4 worldPos, in vec2 uv)
-{
-  return vec4(0,0,0,1);
-}
-vec4 DoSpotLight(in Light light, in vec4 worldNormal, in vec4 worldPos,in vec2 uv)
-{
-  return vec4(0,0,0,1);
-}
-vec4 DoDirectionalLight(in Light light, in vec4 worldNormal, in vec4 worldPos,in vec2 uv)
-{
-  // light vector points from the surface toward the light (opposite light dir.)
-  vec4 lightVec = normalize(-light.direction);
-  
-  vec4 viewVec = worldPos - vec4(Camera.Position_world, 1);
-
-  vec4 ambient = light.ambient;
-  // compute diffuse contribution on the surface
-  vec4 diffuse = max(dot(worldNormal, lightVec), 0) * light.diffuse;
-  
-  vec4 specFactor=texture(SpecColor_SpecPow_Texture, uv);
-  
-  vec4 specular = light.specular
-                * vec4(specFactor.xyz, 1)
-                * pow(max(dot(reflect(lightVec, worldNormal),viewVec),0),specFactor.w);
-
-  mat4 biasMatrix = mat4(vec4(0.5f,0,0,0),
-                         vec4(0,0.5f,0,0),
-                         vec4(0,0,0.5f,0),
-                         vec4(0.5f,0.5f,0.5f,1));
-                         
-  vec4 ShadowCoord = biasMatrix*LightViewProj*worldPos;
-
-  float visibility = textureProj(ShadowMaps_Texture, ShadowCoord);
-  
-  return light.intensity*(ambient + visibility*(diffuse + specular)); // total contribution from this light
-}
-vec4 computeLightingTerm(in int lightIdx, in vec4 worldNormal, in vec4 worldPos,in vec2 uv)
-{
-  // grab light
-  Light light = Lights[lightIdx];
-  
-  vec4 lightColor = vec4(0,0,0,1);
-  if (light.isActive == false)
-    return vec4(0,0,0,1);
-  ////////////////////////////////////////////////////////
-  //    Calculate Surface Color
-  ////////////////////////////////////////////////////////
-    
-  if(light.lightType == LIGHT_TYPE_POINT)
-    lightColor = DoPointLight(light, worldNormal, worldPos, uv);
-    
-        
-  else if(light.lightType == LIGHT_TYPE_SPOT)
-    lightColor = DoSpotLight(light, worldNormal, worldPos, uv);
-    
-        
-  else if(light.lightType == LIGHT_TYPE_DIRECTIONAL)
-    lightColor = DoDirectionalLight(light, worldNormal, worldPos, uv);
-  
-  ////////////////////////////////////////////////////////
-  //    Calculate Fog Color
-  ////////////////////////////////////////////////////////
-  
-  vec4 viewVec = worldPos - vec4(Camera.Position_world, 1);
-  float fogFactor = (Camera.FarPlaneDist - length(viewVec))/(Camera.FarPlaneDist - Camera.NearPlaneDist);
-  lightColor = fogFactor*lightColor + (1-fogFactor)*Camera.FogColor;
-    
-  
-  ////////////////////////////////////////////////////////
-  //    Return the final surface color
-  ////////////////////////////////////////////////////////
-  return lightColor;
-}
-
-vec4 computeSurfaceColor(in vec4 worldNormal,in vec4 worldPos,in vec2 uv)
-{
-  vec4 color = vec4(0, 0, 0, 0); // no light = black
-  for (int i = 0; i < LightCount; ++i)
-    color += computeLightingTerm(i, worldNormal, worldPos, uv); // contribution of light i
-  return color; // contribution from all lights onto surface
-}
+float GaussianWeights[MAX_WIDTH*2+1];
+float DepthStrip[MAX_WIDTH*2+1];
 
 void main()
 {
   vec2 pixelFrac = vec2(1.0f/ScreenDimension.x,1.0f/ScreenDimension.y );
   vec2 uvPos = vec2(gl_FragCoord.xy * pixelFrac);
-  vec3 pixelPos = texture(WorldPosition_TexV_Texture, uvPos).xyz;
-  vec4 worldPos = vec4(pixelPos,1);
-  vec4 normalTextureData = texture(WorldNormal_ReceiveLight_Texture, uvPos);
-  vec3 pixelNormal = normalTextureData.xyz*2-1;
-  if (pixelNormal == vec3(0,0,0))
-    discard;
-  vec4 worldNormal = vec4(pixelNormal, 0);
   
-  vFragColor.w = 1;
-  if (DebugOutputIndex == DEBUG_OUTPUT_COMBINED)
+
+  const int width = ShadowFilterWidth;
+  const int width2 = 2*width;
+  const int width2p1 = 2*width+1;
+  GaussianWeights[width] = 1;
+  const float s = width/2;
+  float totalWeight = GaussianWeights[width];
+  //establish weights
+  for (int i = 0; i < width; ++i)
   {
-    vec3 pixelMatColor = vec3(0,0,0);
-    vec3 nearColors[9];
-    ////////////////////////////////////////////////////
-    float strength = BlurStrength;
-    if(EnableBlur != 0)
-    {
-      nearColors[0] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(-strength,-strength)) * pixelFrac)).xyz;
-      nearColors[1] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2( 0,-strength)) * pixelFrac)).xyz;
-      nearColors[2] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2( strength,-strength)) * pixelFrac)).xyz;    
-      nearColors[3] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(-strength, 0)) * pixelFrac)).xyz;
-      nearColors[4] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2( 0, 0)) * pixelFrac)).xyz;
-      nearColors[5] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2( strength, 0)) * pixelFrac)).xyz;
-      nearColors[6] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(-strength, strength)) * pixelFrac)).xyz;
-      nearColors[7] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2( 0, strength)) * pixelFrac)).xyz;
-      nearColors[8] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2( strength, strength)) * pixelFrac)).xyz;
-    }
-    else
-    {
-      nearColors[0] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[1] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[2] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[3] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[4] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[5] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[6] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[7] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-      nearColors[8] = texture(DiffuseColor_TexU_Texture, vec2((gl_FragCoord.xy+vec2(0,0)) * pixelFrac)).xyz;
-    }
-    
-    for (int i = 0; i < 9; ++i)
-    {
-      pixelMatColor += nearColors[i];
-    }
-    pixelMatColor /= 9;
-    
-    ///////////////////////////////////////////////////
-    vec3 outputColor;     
-    if (normalTextureData.w > 0.5)
-    {
-      vec3 lightColor = computeSurfaceColor(worldNormal, worldPos,uvPos).xyz;
-      outputColor = pixelMatColor*lightColor;
-    }
-    else
-    {
-      outputColor = pixelMatColor;
-    }
-    vFragColor.xyz = outputColor;
+    float weight = exp(-((width-i)*(width-i)) / (2*s*s));
+    GaussianWeights[i] = weight;
+    GaussianWeights[width2-i] = weight;  
+    totalWeight += 2.0f * weight;
   }
-  else if (DebugOutputIndex == DEBUG_OUTPUT_DIFFUSE)
+  //normalize weights
+  for (int i = 0; i < width2p1; ++i)
   {
-    vFragColor.xyz = texture(DiffuseColor_TexU_Texture, uvPos).xyz;
-  }
-  else if (DebugOutputIndex == DEBUG_OUTPUT_WORLD_POSITION)
-  {    
-    vFragColor.xyz = pixelPos;
-  }
-  else if (DebugOutputIndex == DEBUG_OUTPUT_WORLD_NORMAL)
+    GaussianWeights[i] /= totalWeight;
+  }  
+  
+  // ////////////////////////
+  float sum = 0;  
+  DepthStrip[width] = texture(ShadowMaps_Texture, uvPos).r;
+  
+  for (int i = 0; i < width; ++i)
   {
-    vFragColor.xyz = texture(WorldNormal_ReceiveLight_Texture, uvPos).xyz;
-  }
-  else if (DebugOutputIndex == DEBUG_OUTPUT_SPECULAR_COLOR)
+    float depthLeft  = texture(ShadowMaps_Texture, uvPos-vec2((width-i)*pixelFrac.x,0)).r;
+    float depthRight = texture(ShadowMaps_Texture, uvPos+vec2((width-i)*pixelFrac.x,0)).r;
+    DepthStrip[i] = depthLeft;
+    DepthStrip[width2-i] = depthRight;
+  }  
+  for (int i=0; i < width2p1; ++i)
   {
-    vFragColor.xyz = texture(SpecColor_SpecPow_Texture, uvPos).xyz;
+    sum += DepthStrip [i] * GaussianWeights[i];
   }
-  else if (DebugOutputIndex == DEBUG_OUTPUT_DEPTH)
-  {
-    vFragColor = texture(Depth_Texture, uvPos);
-  }
-  else if (DebugOutputIndex == DEBUG_OUTPUT_SHADOWMAP)
-  {
-    // vFragColor = texture(ShadowMaps_Texture, uvPos);
-    mat4 biasMatrix = mat4(vec4(0.5f,0,0,0.5f),
-                           vec4(0,0.5f,0,0.5f),
-                           vec4(0,0,0.5f,0.5f),
-                           vec4(0,0,0,1));
-                           
-    vec4 ShadowCoord = transpose(biasMatrix)*LightViewProj*worldPos;
-    float depth = textureProj(ShadowMaps_Texture, ShadowCoord);
-    
-    vFragColor.x = depth;
-    vFragColor.y = depth;
-    vFragColor.z = depth;
-    vFragColor.w = 1;
-  }
+  FilteredDepth = sum;
 }
+
+

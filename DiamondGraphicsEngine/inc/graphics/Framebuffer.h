@@ -30,7 +30,8 @@ namespace Graphics
         //this value is used to bind depth texture,
         //but not to attach it in the first pass
         DepthTexture = Count,
-        ShadowMap
+        ShadowMap,
+        FloatBuffer
     };
 
     class Framebuffer
@@ -68,7 +69,7 @@ namespace Graphics
         void genDepthTexture(bool asShadowMap);
 
         u32 m_width, m_height;
-        GLuint m_fbo = 0, m_depthTextureHandle = 0;
+        GLuint m_fbo = 0, m_depthTextureHandle = 0, m_floatBuffer = 0;
         Color m_clearColor = Color::Cyan;
         std::shared_ptr<Texture> m_colorTexture[static_cast<int>(GBufferAttachmentType::Count)];
 
