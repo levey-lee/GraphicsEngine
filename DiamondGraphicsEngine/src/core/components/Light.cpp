@@ -79,7 +79,7 @@ void SetLightEditor(Component::Light* light)
     TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->farPlane, (defStr + " label='Far Plane' step=0.5 min=0").c_str());
     TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->shadowExp, (defStr + " label='Shadow Exponent' step=0.1").c_str());
     TwAddVarRW(editorCache, nullptr, TW_TYPE_FLOAT, &light->GetLightAttribute()->shadowFov, (defStr + " label='Shadow FOV' step=0.01").c_str());
-    TwAddVarRW(editorCache, nullptr, TW_TYPE_INT32, &light->GetLightAttribute()->filterWidth, (defStr + " label='Shadow Softness' min=0 max=50").c_str());
+    TwAddVarRW(editorCache, nullptr, TW_TYPE_INT32, &light->GetLightAttribute()->filterWidth, (defStr + " label='Shadow Smoothness' min=0 max=50").c_str());
 
     TwType shadowTypeEnumType = TwDefineEnumFromString(nullptr, "No Shadow,Hard Shadow,Soft Shadow");
     TwAddVarRW(editorCache, nullptr, shadowTypeEnumType, &light->GetLightAttribute()->shadowType, (defStr + " label='Shadow Type'").c_str());
@@ -138,7 +138,7 @@ namespace Component
             {
                 //TODO add perspective
             }
-            if (m_attribute->shadowType == Graphics::ShadowType::HardShadow)
+            if (m_attribute->shadowType != Graphics::ShadowType::NoShadow)
             {
                 m_attribute->viewproj = projection*worldTrans.Inverted();
             }

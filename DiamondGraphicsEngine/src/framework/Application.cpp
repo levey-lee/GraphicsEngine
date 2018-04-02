@@ -178,15 +178,15 @@ void Application::ApplicationWrapper::OnDraw()
     float dt = static_cast<float>(elapsedTime - elapsedTimeLastFrame);
     elapsedTimeLastFrame = elapsedTime;
     dt /= 1000.0f;
-#ifdef _DEBUG
-    static int titleUpdateCounter;
+//#ifdef _DEBUG
+    static unsigned titleUpdateCounter;
     if (titleUpdateCounter == 20)
     {
         glutSetWindowTitle((GetInstance().m_windowTitle + "  - fps[" + std::to_string(1.0f / dt) + "]").c_str());
         titleUpdateCounter = 0;
     }
     titleUpdateCounter++;
-#endif // _DEBUG
+//#endif // _DEBUG
 
 
 

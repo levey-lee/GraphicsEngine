@@ -10,11 +10,15 @@ namespace Graphics
     enum class ShaderStage : unsigned char
     {
         ForwardRendering = 0,
+
         DiffuseMaterial = 0,
-        DeferredLighting = 1,
-        ShadowBlurH = 2,
-        ShadowBlurV = 3,
-        RenderFullScreenQuad = 4,
+        SSAO = 1,
+        SSAOBlurH = 2,
+        SSAOBlurV = 3,
+        DeferredLighting = 4,
+        ShadowBlurH = 5,
+        ShadowBlurV = 6,
+        RenderFullScreenQuad = 7,
 
         Count
     };

@@ -37,13 +37,13 @@ namespace Graphics
         LightType lightType = LightType::Directional;
         ShadowType shadowType = ShadowType::NoShadow;
         float shadowStrength = 1.0f;
-        float shadowFov = 1.0f;
-        int filterWidth = 5;
+        float shadowFov = 0.45f;
+        int filterWidth = 8;
         float intensity = 1.0f;
         float range = 10.0f;
         float nearPlane = 1;
-        float farPlane = 100;
-        float shadowExp = 100.0f;
+        float farPlane = 80;
+        float shadowExp = 150.0f;
         float innerAngle = Math::c_Pi / 12.0f;//15 degree
         float outerAngle = Math::c_Pi / 6.0f;//30 degree
         float spotFalloff = 1.0f;

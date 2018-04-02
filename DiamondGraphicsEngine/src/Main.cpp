@@ -67,9 +67,12 @@ void Initialize(Application* app, void* /*userdata*/)
 
     std::shared_ptr<FramebufferManager> fboManager = g_Graphics->GetFrameBufferManager();
     fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build();
+    fboManager->RegisterFramebuffer(FramebufferType::SSAO, app->GetWindowWidth(), app->GetWindowHeight())->BuildSsaoBuffer();
     fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap,1000, 1000)->Build(true);
     fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurH, 1000, 1000)->Build(true);
     fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurV, 1000, 1000)->Build(true);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -82,10 +85,12 @@ void Initialize(Application* app, void* /*userdata*/)
         { "sponge" ,        "menger_sponge_level_1_high_poly.obj" , DefaultUvType::Box },
         { "sphere" ,        "sphere.obj" , DefaultUvType::Spherical },
         { "sphereReversed", "sphereReversed.obj" , DefaultUvType::Spherical },
-        { "teapot" ,        "teapot.obj" , DefaultUvType::Box },
+        { "teapot" ,        "teapot.obj" , DefaultUvType::Spherical },
         { "cube" ,          "cube.obj" , DefaultUvType::Box },
         { "plane" ,         "plane_low_poly.obj" , DefaultUvType::Box },
+        { "bunny" ,         "bunny.obj" , DefaultUvType::Box },
         { "horse" ,         "horse_high_poly.obj" , DefaultUvType::Box },
+        { "lucy_princeton" ,"lucy_princeton.obj" , DefaultUvType::Box },
     });
 
     std::shared_ptr<Mesh> spongeMesh = meshManager->GetMesh("sponge");
@@ -94,13 +99,18 @@ void Initialize(Application* app, void* /*userdata*/)
     //--------------------------------------
     std::shared_ptr<Mesh> sphereReversedMesh = meshManager->GetMesh("sphereReversed");
     //--------------------------------------
-    std::shared_ptr<Mesh> teapot = meshManager->GetMesh("teapot");
+    std::shared_ptr<Mesh> teapotMesh = meshManager->GetMesh("teapot");
     //--------------------------------------
     std::shared_ptr<Mesh> cube = meshManager->GetMesh("cube");
     //--------------------------------------
     std::shared_ptr<Mesh> planeMesh = meshManager->GetMesh("plane");
     //--------------------------------------
+    std::shared_ptr<Mesh> lucyMesh = meshManager->GetMesh("lucy_princeton");
+    //--------------------------------------
 
+    //------------------------------------------------------------------------------
+    //std::shared_ptr<TriangleMesh> lucyMesh = meshManager->TriangleMeshHandler.LoadObjMesh("lucy_princeton", "lucy_princeton.obj", DefaultUvType::Box);
+    //triangleMesh->Build();
     //------------------------------------------------------------------------------
     std::shared_ptr<TriangleMesh> triangleMesh = meshManager->TriangleMeshHandler.BuildTriangle("SampleTriangle");
     triangleMesh->Build();
@@ -122,11 +132,14 @@ void Initialize(Application* app, void* /*userdata*/)
     ShaderType usingShader = ShaderType::UberDeferred;
     shaderManager->LoadShader(usingShader,
     {
-        { "DeferredStage0.vert", "DeferredStage0.frag", ShaderUsage::RegularVSPS },
-        { "DeferredStage1.vert", "DeferredStage1.frag" , ShaderUsage::LightShadowMap },
-        { "DeferredStage2.vert", "DeferredStage2.frag" , ShaderUsage::RegularVSPS },
-        { "DeferredStage2_1.vert", "DeferredStage2_1.frag" , ShaderUsage::RegularVSPS },
-        { "DeferredStage3.vert", "DeferredStage3.frag", ShaderUsage::RegularVSPS }
+        { "GBufferPass.vert", "GBufferPass.frag", ShaderUsage::RegularVSPS },
+        { "GenAOFactor.vert", "GenAOFactor.frag", ShaderUsage::RegularVSPS },
+        { "BlurSSAO_H.vert", "BlurSSAO_H.frag" , ShaderUsage::RegularVSPS },
+        { "BlurSSAO_V.vert", "BlurSSAO_V.frag" , ShaderUsage::RegularVSPS },
+        { "GenShadowMap.vert", "GenShadowMap.frag" , ShaderUsage::LightShadowMap },
+        { "BlurShadowMap_H.vert", "BlurShadowMap_H.frag" , ShaderUsage::RegularVSPS },
+        { "BlurShadowMap_V.vert", "BlurShadowMap_V.frag" , ShaderUsage::RegularVSPS },
+        { "FinalPass.vert", "FinalPass.frag", ShaderUsage::RegularVSPS }
     });
 #else
     ShaderType usingShader = ShaderType::UberForward;
@@ -151,24 +164,47 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& plane = g_MainScene.CreateObject(usingShader);
         plane.AddComponent<Renderer>(materialManager->GetMaterial("Plane"), planeMesh);
-        plane.GetComponentRef<Component::Transform>().SetPosition({ 0,-0.98f,-5 }).SetScale({ 0.2f,1,0.2f }).SetRotation({ 0,0,0 });
+        plane.GetComponentRef<Component::Transform>().SetPosition({ 5,-0.48f,-5 }).SetScale({ 0.03f,0.01f,0.02f }).SetRotation({ 0,0,0 });
         plane.SetName("Plane");
 
         Object& golfBall = g_MainScene.CreateObject(usingShader);
         golfBall.AddComponent<Renderer>(materialManager->GetMaterial("Golf"), golfMesh);
         golfBall.GetComponentRef<Component::Transform>().SetPosition({ 1,0,-5 }).SetScale(1).SetRotation({ 0,0,0 });
         golfBall.SetName("Golf");
-        
+
+
+        Object& teapotObj = g_MainScene.CreateObject(usingShader);
+        teapotObj.AddComponent<Renderer>(materialManager->GetMaterial("Teapot"), teapotMesh);
+        teapotObj.GetComponentRef<Component::Transform>().SetPosition({ 2, 0,-2 }).SetScale(1).SetRotation({ 0,-2.4f,0 });
+        teapotObj.SetName("Teapot");
+
+
+        Object& reversedSphere = g_MainScene.CreateObject(usingShader);
+        reversedSphere.AddComponent<Renderer>(materialManager->GetMaterial("ReversedSphere"), sphereReversedMesh);
+        reversedSphere.GetComponentRef<Component::Transform>().SetPosition({ 3,-0.18f,-5 }).SetScale(0.6f).SetRotation({ 0,0,0 });
+        reversedSphere.SetName("ReversedSphere");
+
+
+        Object& lucy = g_MainScene.CreateObject(usingShader);
+        lucy.AddComponent<Renderer>(materialManager->GetMaterial("Lucy"), lucyMesh);
+        lucy.GetComponentRef<Component::Transform>().SetPosition({ 3,0.26f,-0.1f }).SetScale(0.5f).SetRotation({ 0,0,0 });
+        lucy.SetName("Lucy");
+
+        Object& sphere = g_MainScene.CreateObject(usingShader);
+        sphere.AddComponent<Renderer>(materialManager->GetMaterial("Sphere"), sphereMesh);
+        sphere.GetComponentRef<Component::Transform>().SetPosition({ 5,-0.07f,-5 }).SetScale(0.8f).SetRotation({ 0,0,0 });
+        sphere.SetName("Sphere");
         ///////////////////////////////////////////////////
         ///////////////////////////////////////////////////
         ///////////////////////////////////////////////////
         Object& camObj = g_MainScene.CreateObject(usingShader);
         Component::Transform& camtrans = camObj.GetComponentRef<Component::Transform>();
-        camtrans.SetPosition({ 0,1.75f, 2});
+        camtrans.SetPosition({2,2.5f,3});
         camtrans.SetRotation({ 0,0,0 });
         camtrans.SetScale(1000.0f);
         camObj.AddComponent<Camera>(camtrans, true, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
-        camObj.GetComponentRef<Camera>().RotateCameraLocal({ -0.2f,0,0 });
+        camObj.GetComponentRef<Camera>().RotateCameraLocal({ -0.45f,0,0 });
+        camObj.GetComponentRef<Camera>().SetNearPlaneDistance(1.0f);
         camObj.AddComponent<Skydome>(materialManager->GetMaterial("Skydome"), sphereReversedMesh);
         //camObj.AddComponent<Light>()
         //    .SetLightType(LightType::Directional)
@@ -181,16 +217,16 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& lightObj = g_MainScene.CreateObject(usingShader);
         Component::Transform& lightTrans = lightObj.GetComponentRef<Component::Transform>();
-        lightTrans.SetPosition({0,10,-2}).SetRotation({ -c_Pi / 2.0f, 0, 0});
-        //lightTrans.SetPosition({ 0,1.75f, 2 });
-        lightObj.AddComponent<Camera>(lightTrans, false, g_Graphics.get()).SetFieldOfViewDegree(90.0f);
+        lightTrans.SetPosition({-8,10,-3.5f}).SetRotation({ -c_Pi / 2.0f, 0, c_Pi / 4.0f });
+        lightObj.AddComponent<Camera>(lightTrans, false, g_Graphics.get()).SetFieldOfViewDegree(45.0f);
         lightObj.GetComponentRef<Camera>().SetNearPlaneDistance(1.0f);
         lightObj.AddComponent<Light>()
             .SetLightType(LightType::Spot)
             ->SetAmbientColor(Color(0,0,0))
-            ->SetSpecularColor(Color(0.8f, 0.8f, 0.2f))
-            ->SetDistanceAttenuation(0.1f,0.1f,0)
-            ->SetShadowType(ShadowType::HardShadow);
+            ->SetSpecularColor(Color(0.8f, 0.8f, 0.8f))
+            ->SetDistanceAttenuation(0.01f,0.01f,0)
+            ->SetShadowType(ShadowType::SoftShadow)
+	        ->SetSpotlightFalloff(8.0f);
         lightObj.SetName("Light");
 
     }
@@ -289,7 +325,15 @@ void OnViewportChanged(Application* application)
         static_cast<float>(application->GetWindowHeight()));
     auto fboManager = g_Graphics->GetFrameBufferManager();
     fboManager->GetFramebuffer(FramebufferType::DeferredGBuffer)->Resize(
-        application->GetWindowWidth(), application->GetWindowHeight());
+        application->GetWindowWidth(), application->GetWindowHeight(),false);
+    
+    fboManager->GetFramebuffer(FramebufferType::SSAO)->Resize(
+        application->GetWindowWidth(), application->GetWindowHeight(), false);
+    fboManager->GetFramebuffer(FramebufferType::SSAOBlurH)->Resize(
+        application->GetWindowWidth(), application->GetWindowHeight(), true);
+    fboManager->GetFramebuffer(FramebufferType::SSAOBlurV)->Resize(
+        application->GetWindowWidth(), application->GetWindowHeight(), true);
+
 }
 
 //**************************************************************************

@@ -26,6 +26,7 @@ namespace Graphics
         btr80AMat->SetAmbientColor(Color(0.1f, 0.1f, 0.1f));
         btr80AMat->SetIlluminationModel(2);
         btr80AMat->SetDiffuseColor(Color(1, 1, 1));
+        btr80AMat->SetSpecularExponent(10.0f);
         btr80AMat->SetEmissiverColor(Color(0, 0, 0));
         emplaceMaterial("BTR80A", btr80AMat);
                
@@ -42,11 +43,29 @@ namespace Graphics
 
         //plane
         std::shared_ptr<Material> planeMat = std::make_shared<Material>(*btr80AMat);
+        planeMat->SetSpecularExponent(10.0f);
         emplaceMaterial("Plane", planeMat);
 
-        //plane
+        //golf
         std::shared_ptr<Material> golfMat = std::make_shared<Material>(*btr80AMat);
+        golfMat->SetSpecularExponent(50.0f);
         emplaceMaterial("Golf", golfMat);
+
+        //Teapot
+        std::shared_ptr<Material> teapotMat = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("Teapot", teapotMat);
+
+        //ReversedSphere
+        std::shared_ptr<Material> reversedSphereMat = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("ReversedSphere", reversedSphereMat);
+
+        //Sphere
+        std::shared_ptr<Material> sphereMat = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("Sphere", sphereMat);
+
+        //Lucy
+        std::shared_ptr<Material> Lucy = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("Lucy", Lucy);
 
 
         std::shared_ptr<TextureManager> textureManager = g->GetTextureManager();
@@ -69,10 +88,16 @@ namespace Graphics
         });
         //btr80A
         btr80AMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(btrDiffuse));
-        btr80AMat->AssignNormalMapTexture(TextureType::NormalMapTexture_0, textures.at(btrNormalMap));
+        //btr80AMat->AssignNormalMapTexture(TextureType::NormalMapTexture_0, textures.at(btrNormalMap));
 
         //skybox
         skyboxMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(grassGroudHDR));
+
+        //teapot
+        teapotMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(grassGroudHDR));
+
+        //sphere
+        sphereMat->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(wareHouseHDR));
 
         //plane
         //planeMesh->AssignDiffuseTexture(TextureType::DiffuseTexture_0, textures.at(metalRoof));

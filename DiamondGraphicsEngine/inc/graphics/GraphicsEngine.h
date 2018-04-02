@@ -51,7 +51,18 @@ namespace Graphics
             int OutputIndex = 0;
             int EnableBlur = 0;
             int BlurStrength = 0;
+            int EnableSSAO = 1;
         }DebugRenderUniform;
+
+        struct
+        {
+            Math::Vec2 ControlVariable = {5,5};
+            int SamplePointNum = 16;
+            float RangeOfInfluence = 0.4f;
+            int BlurWidth = 10;
+            float EdgeStrength = 0.01f;
+        }SSAO;
+
     private:
         void renderScene(Scene* scene);
         void forwardRender(const std::shared_ptr<Shader>& shader, std::unordered_map<ObjectId, RenderObject*>& obj);

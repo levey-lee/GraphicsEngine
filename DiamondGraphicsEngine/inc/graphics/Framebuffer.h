@@ -31,7 +31,8 @@ namespace Graphics
         //but not to attach it in the first pass
         DepthTexture = Count,
         ShadowMap,
-        FloatBuffer
+        FloatBuffer,
+        SSAO
     };
 
     class Framebuffer
@@ -48,8 +49,9 @@ namespace Graphics
         void SetClearColor(Color const& color) { m_clearColor = color; }
         Color const& GetClearColor() const { return m_clearColor; }
 
-        void Resize(u32 width, u32 height);
+        void Resize(u32 width, u32 height, bool depthOnly);
         void Build(bool depthOnly = false);
+        void BuildSsaoBuffer();
         void Bind(); // bind for rendering
         void Clear();
         /*******************************************************
@@ -62,18 +64,24 @@ namespace Graphics
         void Unbind();
         void Destroy();
         Framebuffer* BindGBufferTextures(const std::shared_ptr<ShaderProgram>& shaderProgram);
+        Framebuffer* BindGBufferPositionNormal(const std::shared_ptr<ShaderProgram>& shaderProgram);
+        Framebuffer* BindGBufferNormal(const std::shared_ptr<ShaderProgram>& shaderProgram);
         Framebuffer* BindDepthTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
         Framebuffer* BindShadowMapTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
+        Framebuffer* BindSSAOTexture(const std::shared_ptr<ShaderProgram>& shaderProgram, bool useFloatBuffer);
 
     private:
         void genDepthTexture(bool asShadowMap);
 
         u32 m_width, m_height;
-        GLuint m_fbo = 0, m_depthTextureHandle = 0, m_floatBuffer = 0;
+        GLuint m_fbo = 0;
+        GLuint m_depthTextureHandle = 0;
+        GLuint m_floatBuffer = 0;
         Color m_clearColor = Color::Cyan;
         std::shared_ptr<Texture> m_colorTexture[static_cast<int>(GBufferAttachmentType::Count)];
 
-
+        std::shared_ptr<Texture> m_ssaoTexture;
+        bool m_usedForSSAO = false;
 
     };
 }
