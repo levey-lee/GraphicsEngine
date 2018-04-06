@@ -12,6 +12,7 @@ uniform sampler2D Depth_Texture;
 uniform vec2 ControlVariable; 
 uniform int SamplePointNum;
 uniform float RangeOfInfluence;
+uniform int EnableSSAO;
 
 vec3 SamplePoints[MAX_SAMPLE_POINTS_NUM];
 float Depths[MAX_SAMPLE_POINTS_NUM];
@@ -43,6 +44,8 @@ void SelectSamplePoints(in vec3 worldPosition, in vec3 worldNormal,
 }
 void main()
 {
+  if (EnableSSAO == 0)
+    return;
   vec2 pixelFrac = vec2(1.0f/ScreenDimension.x,1.0f/ScreenDimension.y );
   vec2 uvPos = vec2(gl_FragCoord.xy * pixelFrac);
   vec3 pixelPos = texture(WorldPosition_TexV_Texture, uvPos).xyz;
@@ -72,7 +75,8 @@ void main()
   float s = ControlVariable.x;
   float k = ControlVariable.y;
   
-  AOFactor = max(pow((1-s*S), k),0);
+  AOFactor = clamp(max(pow((1-s*S), k),0),0,1);
+  gl_FragDepth = AOFactor;
   
 }
 

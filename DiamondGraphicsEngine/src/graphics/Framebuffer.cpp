@@ -54,13 +54,13 @@ namespace Graphics
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-                if (counter == 1)
+                if (counter == 1)//this is for position texture
                 {
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_FLOAT, nullptr);
                 }
                 else
                 {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_FLOAT, nullptr);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                 }
                 i->m_isBuilt = true;
                 ++counter;
@@ -95,40 +95,23 @@ namespace Graphics
 
     void Framebuffer::BuildSsaoBuffer()
     {
-        glGenFramebuffers(1, &m_fbo);
-        glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-        size_t textureDataSize = sizeof(u8) * m_width * m_height * 4;
-        u8* data = new u8[textureDataSize];
-        std::memset(data, 0, textureDataSize);
-        m_ssaoTexture = std::make_shared<Texture>(data, m_width, m_height, Texture::Format::RGBA);
-        m_ssaoTexture->Build();
+        glGenTextures(1, &m_depthTextureHandle);
+        glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_depthTextureHandle, 0);
 
-        // create a new texture
-        glGenTextures(1, &(*m_ssaoTexture).m_textureHandle);
-        // bind the generated texture and upload its image contents to OpenGL
-        glBindTexture(GL_TEXTURE_2D, m_ssaoTexture->m_textureHandle);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_width, m_height, 0, GL_RGBA, GL_FLOAT, nullptr);
-        m_ssaoTexture->m_isBuilt = true;
-        genDepthTexture(false);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + static_cast<u8>(GBufferAttachmentType::SSAO), m_ssaoTexture->GetTextureHandle(), 0);
-
-        GLenum drawBuffers[1] = {
-            GL_COLOR_ATTACHMENT0 + static_cast<u8>(GBufferAttachmentType::SSAO),
-        };
-        glDrawBuffers(1, drawBuffers);
         GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         Assert(status == GL_FRAMEBUFFER_COMPLETE, "Failed to create framebuffer.");
         glViewport(0, 0, m_width, m_height);
         glClearColor(0.f, 0.f, 0.f, 1.f); // default clear color
         glClearDepth(1.f); // default clear depth
         Unbind();
-        m_usedForSSAO = true;
+        //m_usedForSSAO = true;
     }
 
     void Framebuffer::Bind()
@@ -228,11 +211,11 @@ namespace Graphics
     {
         glActiveTexture(GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::DiffuseColor_TexU));
         glBindTexture(GL_TEXTURE_2D, m_colorTexture[0]->GetTextureHandle());
-        shaderProgram->SetUniform("DiffuseColor_TexU_Texture", static_cast<u8>(GBufferAttachmentType::DiffuseColor_TexU));
+        shaderProgram->SetUniform("DiffuseColor_Empty_Texture", static_cast<u8>(GBufferAttachmentType::DiffuseColor_TexU));
 
         glActiveTexture(GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::WorldPosition_TexV));
         glBindTexture(GL_TEXTURE_2D, m_colorTexture[1]->GetTextureHandle());
-        shaderProgram->SetUniform("WorldPosition_TexV_Texture", static_cast<u8>(GBufferAttachmentType::WorldPosition_TexV));
+        shaderProgram->SetUniform("WorldPosition_SpecPow_Texture", static_cast<u8>(GBufferAttachmentType::WorldPosition_TexV));
 
         glActiveTexture(GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::WorldNormal_ReceiveLight));
         glBindTexture(GL_TEXTURE_2D, m_colorTexture[2]->GetTextureHandle());
@@ -240,7 +223,7 @@ namespace Graphics
 
         glActiveTexture(GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::SpecColor_SpecPow));
         glBindTexture(GL_TEXTURE_2D, m_colorTexture[3]->GetTextureHandle());
-        shaderProgram->SetUniform("SpecColor_SpecPow_Texture", static_cast<u8>(GBufferAttachmentType::SpecColor_SpecPow));
+        shaderProgram->SetUniform("SpecColor_Empty_Texture", static_cast<u8>(GBufferAttachmentType::SpecColor_SpecPow));
 
         return this;
     }
@@ -288,7 +271,7 @@ namespace Graphics
     {
         auto num = GL_TEXTURE0 + static_cast<u8>(GBufferAttachmentType::SSAO);
         glActiveTexture(num);
-        glBindTexture(GL_TEXTURE_2D, useFloatBuffer? m_floatBuffer : m_ssaoTexture->GetTextureHandle());
+        glBindTexture(GL_TEXTURE_2D, useFloatBuffer? m_floatBuffer : m_depthTextureHandle);
         shaderProgram->SetUniform("SSAO_Texture", static_cast<u8>(GBufferAttachmentType::SSAO));
 
         return this;

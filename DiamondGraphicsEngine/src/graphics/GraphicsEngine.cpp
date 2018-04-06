@@ -152,6 +152,7 @@ namespace Graphics
         program->SetUniform("ControlVariable", SSAO.ControlVariable);
         program->SetUniform("SamplePointNum", SSAO.SamplePointNum);
         program->SetUniform("RangeOfInfluence", SSAO.RangeOfInfluence);
+        program->SetUniform("EnableSSAO", DebugRenderUniform.EnableSSAO);
 
 
         m_meshManager->GetMesh("FSQ")->Render();
@@ -175,28 +176,16 @@ namespace Graphics
         program->SetUniform("BlurWidth", SSAO.BlurWidth);
         program->SetUniform("EdgeStrength", SSAO.EdgeStrength);
         program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
-
+        program->SetUniform("HorizontalBlur", true);
+        program->SetUniform("EnableSSAO", DebugRenderUniform.EnableSSAO);
         m_meshManager->GetMesh("FSQ")->Render();
 
-
         //TODO Deferred Shading Step 4 : Blur SSAO map Vertically
-        program = shader->GetShaderProgram(ShaderStage::SSAOBlurV);
-        program->Bind();
 
         m_frameBufferManager->Bind(FramebufferType::SSAOBlurV);
         m_frameBufferManager->Clear(FramebufferType::SSAOBlurV);
         m_frameBufferManager->GetFramebuffer(FramebufferType::SSAOBlurH)->BindSSAOTexture(program, true);
-
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
-        fbo->BindGBufferNormal(program);
-        fbo->BindDepthTexture(program);
-
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::SSAOBlurH);
-        fboWidth = static_cast<float>(fbo->GetWidth());
-        fboHeight = static_cast<float>(fbo->GetHeight());
-        program->SetUniform("BlurWidth", SSAO.BlurWidth);
-        program->SetUniform("EdgeStrength", SSAO.EdgeStrength);
-        program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
+        program->SetUniform("HorizontalBlur", false);
         m_meshManager->GetMesh("FSQ")->Render();
 
         //TODO Deferred Shading Step 5 : Generate Shadow Map

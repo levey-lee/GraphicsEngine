@@ -14,11 +14,10 @@ namespace Graphics
         DiffuseMaterial = 0,
         SSAO = 1,
         SSAOBlurH = 2,
-        SSAOBlurV = 3,
-        DeferredLighting = 4,
-        ShadowBlurH = 5,
-        ShadowBlurV = 6,
-        RenderFullScreenQuad = 7,
+        DeferredLighting = 3,
+        ShadowBlurH = 4,
+        ShadowBlurV = 5,
+        RenderFullScreenQuad = 6,
 
         Count
     };

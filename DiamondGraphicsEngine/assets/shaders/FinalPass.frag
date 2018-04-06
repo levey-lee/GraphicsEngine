@@ -26,10 +26,10 @@ uniform int DebugOutputIndex;
 uniform int EnableSSAO;
 uniform vec2 ScreenDimension;
 uniform vec3 LightPosition;
-uniform sampler2D vDiffuseColor_Occluder_Texture;
-uniform sampler2D WorldPosition_TexV_Texture;
+uniform sampler2D DiffuseColor_Empty_Texture;
+uniform sampler2D WorldPosition_SpecPow_Texture;
 uniform sampler2D WorldNormal_ReceiveLight_Texture;
-uniform sampler2D SpecColor_SpecPow_Texture;
+uniform sampler2D SpecColor_Empty_Texture;
 uniform sampler2D Depth_Texture;
 uniform sampler2D ShadowMaps_Texture; 
 uniform sampler2D SSAO_Texture; 
@@ -128,11 +128,12 @@ vec4 DoSpotLight(in Light light, in vec4 worldNormal, in vec4 worldPos,in vec2 u
  
   vec3 reflectVec = reflect(-lightVec.xyz, worldNormal.xyz);
   
-  vec4 specFactor=texture(SpecColor_SpecPow_Texture, uv);
+  vec4 specFactor=texture(SpecColor_Empty_Texture, uv);
+  float specPow=texture(WorldPosition_SpecPow_Texture, uv).w;
   
   vec4 specular = light.specular
                 * vec4(specFactor.xyz, 1)
-                * pow(max(dot(reflectVec.xyz,viewVec.xyz),0),specFactor.w);
+                * pow(max(dot(reflectVec.xyz,viewVec.xyz),0), specPow);
 
   float cos_inner = cos(light.innerAngle);
   float cos_outer = cos(light.outerAngle);
@@ -174,11 +175,13 @@ vec4 DoDirectionalLight(in Light light, in vec4 worldNormal, in vec4 worldPos,in
   // compute diffuse contribution on the surface
   vec4 diffuse = max(dot(worldNormal, lightVec), 0) * light.diffuse;
   
-  vec4 specFactor=texture(SpecColor_SpecPow_Texture, uv);
+  vec4 specFactor=texture(SpecColor_Empty_Texture, uv);
+
+  float specPow=texture(WorldPosition_SpecPow_Texture, uv).w;
   
   vec4 specular = light.specular
                 * vec4(specFactor.xyz, 1)
-                * pow(max(dot(reflect(lightVec, worldNormal),viewVec),0),specFactor.w);
+                * pow(max(dot(reflect(lightVec, worldNormal),viewVec),0),specPow);
 
 
   float visibility = CalcShadowFactor(worldPos, uv);
@@ -260,12 +263,12 @@ vec3 BlurScene(in vec2 uvPos, in vec2 pixelFrac)
   // ////////////////////////
   vec3 colorVals[width2p1];
   vec3 sum2 = vec3(0,0,0);  
-  colorVals[width] = texture(vDiffuseColor_Occluder_Texture, uvPos).rgb;
+  colorVals[width] = texture(DiffuseColor_Empty_Texture, uvPos).rgb;
   
   for (int i = 0; i < width; ++i)
   {    
-    vec3 depthLeft  = texture(vDiffuseColor_Occluder_Texture, uvPos-vec2((width-i)*pixelFrac.x,0)*BlurStrength).rgb;
-    vec3 depthRight = texture(vDiffuseColor_Occluder_Texture, uvPos+vec2((width-i)*pixelFrac.x,0)*BlurStrength).rgb;
+    vec3 depthLeft  = texture(DiffuseColor_Empty_Texture, uvPos-vec2((width-i)*pixelFrac.x,0)*BlurStrength).rgb;
+    vec3 depthRight = texture(DiffuseColor_Empty_Texture, uvPos+vec2((width-i)*pixelFrac.x,0)*BlurStrength).rgb;
     colorVals[i] = depthLeft;
     colorVals[width2-i] = depthRight;
   }  
@@ -277,8 +280,8 @@ vec3 BlurScene(in vec2 uvPos, in vec2 pixelFrac)
   
   for (int i = 0; i < width; ++i)
   {    
-    vec3 depthTop  = texture(vDiffuseColor_Occluder_Texture, uvPos-vec2(0, (width-i)*pixelFrac.y)*BlurStrength).rgb;
-    vec3 depthDown = texture(vDiffuseColor_Occluder_Texture, uvPos+vec2(0, (width-i)*pixelFrac.y)*BlurStrength).rgb;
+    vec3 depthTop  = texture(DiffuseColor_Empty_Texture, uvPos-vec2(0, (width-i)*pixelFrac.y)*BlurStrength).rgb;
+    vec3 depthDown = texture(DiffuseColor_Empty_Texture, uvPos+vec2(0, (width-i)*pixelFrac.y)*BlurStrength).rgb;
     colorVals[i] = depthTop;
     colorVals[width2-i] = depthDown;
   }  
@@ -294,7 +297,7 @@ void main()
 {
   vec2 pixelFrac = vec2(1.0f/ScreenDimension.x,1.0f/ScreenDimension.y );
   vec2 uvPos = vec2(gl_FragCoord.xy * pixelFrac);
-  vec3 pixelPos = texture(WorldPosition_TexV_Texture, uvPos).xyz;
+  vec3 pixelPos = texture(WorldPosition_SpecPow_Texture, uvPos).xyz;
   vec4 worldPos = vec4(pixelPos,1);
   vec4 normalTextureData = texture(WorldNormal_ReceiveLight_Texture, uvPos);
   vec3 pixelNormal = normalTextureData.xyz*2-1;
@@ -309,7 +312,7 @@ void main()
     if(EnableBlur != 0)//enable blur
       pixelMatColor = BlurScene(uvPos, pixelFrac);
     else
-      pixelMatColor = texture(vDiffuseColor_Occluder_Texture, vec2((gl_FragCoord.xy) * pixelFrac)).xyz;
+      pixelMatColor = texture(DiffuseColor_Empty_Texture, vec2((gl_FragCoord.xy) * pixelFrac)).xyz;
     //////////////////////////////////////////////////////////////////////////////////////////////////
     
     vec3 outputColor;     
@@ -326,7 +329,7 @@ void main()
   }
   else if (DebugOutputIndex == DEBUG_OUTPUT_DIFFUSE)
   {
-    vFragColor.xyz = texture(vDiffuseColor_Occluder_Texture, uvPos).xyz;
+    vFragColor.xyz = texture(DiffuseColor_Empty_Texture, uvPos).xyz;
   }
   else if (DebugOutputIndex == DEBUG_OUTPUT_WORLD_POSITION)
   {    
@@ -338,7 +341,7 @@ void main()
   }
   else if (DebugOutputIndex == DEBUG_OUTPUT_SPECULAR_COLOR)
   {
-    vFragColor.xyz = texture(SpecColor_SpecPow_Texture, uvPos).xyz;
+    vFragColor.xyz = texture(SpecColor_Empty_Texture, uvPos).xyz;
   }
   else if (DebugOutputIndex == DEBUG_OUTPUT_DEPTH)
   {

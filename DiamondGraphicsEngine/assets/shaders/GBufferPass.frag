@@ -7,10 +7,10 @@ in vec2 Uv1;//fixed border line
 in mat4 TBN;
 
 // layout(location = 0) out vec4 vFragColor;
-layout(location = 0) out vec4 vDiffuseColor_Occluder;
-layout(location = 1) out vec4 vWorldPosition_TexV;
+layout(location = 0) out vec4 vDiffuseColor_Empty;
+layout(location = 1) out vec4 vWorldPosition_SpecPow;
 layout(location = 2) out vec4 vWorldNormal_ReceiveLight;
-layout(location = 3) out vec4 vSpecColor_SpecPow;
+layout(location = 3) out vec4 vSpecColor_Empty;
 
 // represents material properties of the surface passed by the application
 uniform struct
@@ -40,14 +40,14 @@ void main()
   vec4 textureColor  = Material.DiffuseTextureEnabled ? texture(Material.DiffuseTexture, uv) : vec4(1,1,1,1);
 
   //layout 0
-  vDiffuseColor_Occluder.xyz = clamp(vec3(materialColor.xyz)*vec3(textureColor.xyz), 0, 1);
+  vDiffuseColor_Empty.xyz = clamp(vec3(materialColor.xyz)*vec3(textureColor.xyz), 0, 1);
   //vDiffuseColor_TexU.w = uv.x;
-   vDiffuseColor_Occluder.w = 1;
+   vDiffuseColor_Empty.w = 1;
 
   //layout 1
-  vWorldPosition_TexV.xyz = WorldPosition.xyz;
+  vWorldPosition_SpecPow.xyz = WorldPosition.xyz;
   //vWorldPosition_TexV.w = uv.y;
-   vWorldPosition_TexV.w = 1;
+   vWorldPosition_SpecPow.w = Material.SpecularExponent;
 
 
   //layout 2
@@ -71,11 +71,10 @@ void main()
   //layout 3
   if (Material.SpecularTextureEnabled)
   {
-    vSpecColor_SpecPow.xyz = texture(Material.SpecularTexture, uv).xyz;
+    vSpecColor_Empty.xyz = texture(Material.SpecularTexture, uv).xyz;
   }
   else
   {
-    vSpecColor_SpecPow.xyz = Material.SpecularColor.xyz;
+    vSpecColor_Empty.xyz = Material.SpecularColor.xyz;
   }
-  vSpecColor_SpecPow.w = Material.SpecularExponent;
 }
