@@ -38,7 +38,7 @@ namespace Graphics
         ShadowType shadowType = ShadowType::NoShadow;
         float shadowStrength = 1.0f;
         float shadowFov = 0.45f;
-        int filterWidth = 8;
+        int filterWidth = 5;
         float intensity = 1.0f;
         float range = 10.0f;
         float nearPlane = 1;

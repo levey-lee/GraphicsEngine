@@ -72,9 +72,9 @@ void Initialize(Application* app, void* /*userdata*/)
     fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurH, 512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);
     fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurV, 512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);
 
-    fboManager->RegisterFramebuffer(FramebufferType::SSAO, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
-    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
-    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAO,      512,512)->Build(FBO_USAGE_DEPTH_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurH, 512,512)->Build(FBO_USAGE_DEPTH_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurV, 512,512)->Build(FBO_USAGE_DEPTH_BUFFER);
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -178,6 +178,10 @@ void Initialize(Application* app, void* /*userdata*/)
         teapotObj.GetComponentRef<Component::Transform>().SetPosition({ 2, 0,-2 }).SetScale(1).SetRotation({ 0,-2.4f,0 });
         teapotObj.SetName("Teapot");
 
+        Object& spongeObj = g_MainScene.CreateObject(usingShader);
+        spongeObj.AddComponent<Renderer>(materialManager->GetMaterial("Sponge"), spongeMesh).SetEnabled(false);
+        spongeObj.GetComponentRef<Component::Transform>().SetPosition({ 2, 2, -2 }).SetScale(10).SetRotation({ 0, 0,0 });
+        spongeObj.SetName("Menger Sponge");
 
         Object& reversedSphere = g_MainScene.CreateObject(usingShader);
         reversedSphere.AddComponent<Renderer>(materialManager->GetMaterial("ReversedSphere"), sphereReversedMesh);
@@ -327,12 +331,12 @@ void OnViewportChanged(Application* application)
     fboManager->GetFramebuffer(FramebufferType::DeferredGBuffer)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(),false);
     
-    fboManager->GetFramebuffer(FramebufferType::SSAO)->Resize(
-        application->GetWindowWidth(), application->GetWindowHeight(), false);
-    fboManager->GetFramebuffer(FramebufferType::SSAOBlurH)->Resize(
-        application->GetWindowWidth(), application->GetWindowHeight(), true);
-    fboManager->GetFramebuffer(FramebufferType::SSAOBlurV)->Resize(
-        application->GetWindowWidth(), application->GetWindowHeight(), true);
+    //fboManager->GetFramebuffer(FramebufferType::SSAO)->Resize(
+    //    application->GetWindowWidth(), application->GetWindowHeight(), false);
+    //fboManager->GetFramebuffer(FramebufferType::SSAOBlurH)->Resize(
+    //    application->GetWindowWidth(), application->GetWindowHeight(), true);
+    //fboManager->GetFramebuffer(FramebufferType::SSAOBlurV)->Resize(
+    //    application->GetWindowWidth(), application->GetWindowHeight(), true);
 
 }
 

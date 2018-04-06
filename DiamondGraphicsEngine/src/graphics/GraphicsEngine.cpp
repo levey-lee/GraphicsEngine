@@ -151,9 +151,11 @@ namespace Graphics
             fbo->BindGBufferPositionNormal(program);
             fbo->BindDepthTexture(program);
 
-            screenWidth = static_cast<float>(Application::GetInstance().GetWindowWidth());
-            screenHeight = static_cast<float>(Application::GetInstance().GetWindowHeight());
-            program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));
+            fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::SSAO);
+            fboWidth = static_cast<float>(fbo->GetWidth());
+            fboHeight = static_cast<float>(fbo->GetHeight());
+            program->SetUniform("UseSpiralAlgorithm", SSAO.UseSpiralAlgorithm);
+            program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
             program->SetUniform("ControlVariable", SSAO.ControlVariable);
             program->SetUniform("SamplePointNum", SSAO.SamplePointNum);
             program->SetUniform("RangeOfInfluence", SSAO.RangeOfInfluence);

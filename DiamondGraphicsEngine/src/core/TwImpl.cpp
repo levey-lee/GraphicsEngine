@@ -135,6 +135,7 @@ namespace
         TwAddSeparator(resourceBar, nullptr, nullptr);
         TwAddVarRW(resourceBar, nullptr, TW_TYPE_BOOL32, &graphics->DebugRenderUniform.EnableSSAO, "label='Enable SSAO'");
         TwAddVarRW(resourceBar, nullptr, TW_TYPE_POINT(2, 0.05f, "Linear", "Exponent"), &graphics->SSAO.ControlVariable, "label='SSAO Darkness Variables'");
+        TwAddVarRW(resourceBar, nullptr, TW_TYPE_BOOL32, &graphics->SSAO.UseSpiralAlgorithm, "label='SSAO Use Spiral Algorithm' ");
         TwAddVarRW(resourceBar, nullptr, TW_TYPE_FLOAT, &graphics->SSAO.RangeOfInfluence, "label='SSAO Range Of Influence' min=0 step=0.01");
         TwAddVarRW(resourceBar, nullptr, TW_TYPE_INT32, &graphics->SSAO.SamplePointNum, "label='SSAO Sample Point Amount' min=1 max=64");
         TwAddVarRW(resourceBar, nullptr, TW_TYPE_INT32, &graphics->SSAO.BlurWidth, "label='SSAO Blur Radius' min=0 max=50");

@@ -58,9 +58,10 @@ namespace Graphics
         {
             Math::Vec2 ControlVariable = {5,5};
             int SamplePointNum = 16;
-            float RangeOfInfluence = 0.4f;
+            float RangeOfInfluence = 0.3f;
             int BlurWidth = 10;
-            float EdgeStrength = 0.01f;
+            float EdgeStrength = 0.5f;
+            int UseSpiralAlgorithm = 1;
         }SSAO;
 
     private:

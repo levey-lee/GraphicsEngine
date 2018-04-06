@@ -54,6 +54,10 @@ namespace Graphics
         //Teapot
         std::shared_ptr<Material> teapotMat = std::make_shared<Material>(*btr80AMat);
         emplaceMaterial("Teapot", teapotMat);
+        
+        //Sponge
+        std::shared_ptr<Material> spongeMat = std::make_shared<Material>(*btr80AMat);
+        emplaceMaterial("Sponge", spongeMat);
 
         //ReversedSphere
         std::shared_ptr<Material> reversedSphereMat = std::make_shared<Material>(*btr80AMat);
