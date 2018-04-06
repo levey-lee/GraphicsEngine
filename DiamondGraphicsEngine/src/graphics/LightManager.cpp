@@ -246,9 +246,41 @@ namespace Graphics
         shader->SetUniform("LightShadowExp", m_lightAttribtues.front().shadowExp);
     }
 
+    //TODO this supports only the first light
     void LightManager::SetShadowFilterUniforms(std::shared_ptr<ShaderProgram> shader)
     {
-        shader->SetUniform("ShadowFilterWidth", m_lightAttribtues.front().filterWidth);
+        //TODO this supports only the first light
+        const int width = m_lightAttribtues.front().filterWidth;
+        const int width2 = 2 * width;
+        const int width2p1 = 2 * width + 1;
+
+        GaussianWeights[width] = 1;
+        const float s = float(width) / 2.0f;
+        float totalWeight = GaussianWeights[width];
+        //establish weights
+        for (int i = 0; i < width; ++i)
+        {
+            float weight = exp(-((width - i)*(width - i)) / (2 * s*s));
+            GaussianWeights[i] = weight;
+            GaussianWeights[width2 - i] = weight;
+            totalWeight += 2.0f * weight;
+        }
+        //normalize weights
+        for (int i = 0; i < width2p1; ++i)
+        {
+            GaussianWeights[i] /= totalWeight;
+        }
+
+
+        //set gaussian weights
+        for (int i = 0; i < width2p1; i++)
+        {
+            std::stringstream str;
+            str << "GaussianWeights[" << i << "]";
+            //colors
+            shader->SetUniform(str.str()+"", GaussianWeights[i]);
+        }
+        shader->SetUniform("ShadowFilterWidth", width);
     }
 
     Math::Matrix4 LightManager::GetLightViewProj()

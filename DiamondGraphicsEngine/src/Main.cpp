@@ -66,13 +66,11 @@ void Initialize(Application* app, void* /*userdata*/)
     g_Graphics->Initialize();
 
     std::shared_ptr<FramebufferManager> fboManager = g_Graphics->GetFrameBufferManager();
-    fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build();
-    fboManager->RegisterFramebuffer(FramebufferType::SSAO, app->GetWindowWidth(), app->GetWindowHeight())->BuildSsaoBuffer();
-    fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap,1000, 1000)->Build(true);
-    fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
-    fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
-    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
-    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(true);
+    fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_REGULAR);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAO, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap,512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);;
+    fboManager->RegisterFramebuffer(FramebufferType::BlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_FLOAT_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::BlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_FLOAT_BUFFER);
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -134,10 +132,8 @@ void Initialize(Application* app, void* /*userdata*/)
     {
         { "GBufferPass.vert", "GBufferPass.frag", ShaderUsage::RegularVSPS },
         { "GenAOFactor.vert", "GenAOFactor.frag", ShaderUsage::RegularVSPS },
-        { "BlurSSAO.vert", "BlurSSAO.frag" , ShaderUsage::RegularVSPS },
         { "GenShadowMap.vert", "GenShadowMap.frag" , ShaderUsage::LightShadowMap },
-        { "BlurShadowMap_H.vert", "BlurShadowMap_H.frag" , ShaderUsage::RegularVSPS },
-        { "BlurShadowMap_V.vert", "BlurShadowMap_V.frag" , ShaderUsage::RegularVSPS },
+        { "BlurSSAO.vert", "BlurSSAO.frag" , ShaderUsage::RegularVSPS },
         { "FinalPass.vert", "FinalPass.frag", ShaderUsage::RegularVSPS }
     });
 #else
@@ -328,9 +324,9 @@ void OnViewportChanged(Application* application)
     
     fboManager->GetFramebuffer(FramebufferType::SSAO)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(), false);
-    fboManager->GetFramebuffer(FramebufferType::SSAOBlurH)->Resize(
+    fboManager->GetFramebuffer(FramebufferType::BlurH)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(), true);
-    fboManager->GetFramebuffer(FramebufferType::SSAOBlurV)->Resize(
+    fboManager->GetFramebuffer(FramebufferType::BlurV)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(), true);
 
 }

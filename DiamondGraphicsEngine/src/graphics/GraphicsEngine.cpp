@@ -119,8 +119,11 @@ namespace Graphics
 
     void GraphicsEngine::deferredRender(const std::shared_ptr<Shader>& shader, std::unordered_map<ObjectId, RenderObject*>& obj)
     {
-        
-        
+        float screenWidth = 0;
+        float screenHeight = 0;
+        float fboWidth = 0;
+        float fboHeight = 0;
+        std::shared_ptr<Framebuffer> fbo;
         //TODO Deferred Shading Step 1 : fill framebuffer with multiple attachments(GBuffer)
         std::shared_ptr<ShaderProgram> program = shader->GetShaderProgram(ShaderStage::DiffuseMaterial);
         program->Bind();
@@ -137,58 +140,27 @@ namespace Graphics
             m_textureManager->UnbindAll();
         }
 
-        //TODO Deferred Shading Step 2 : Generate SSAO factor
-        program = shader->GetShaderProgram(ShaderStage::SSAO);
-        program->Bind();
-        m_frameBufferManager->Bind(FramebufferType::SSAO);
-        m_frameBufferManager->Clear(FramebufferType::SSAO);
-        std::shared_ptr<Framebuffer> fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
-        fbo->BindGBufferPositionNormal(program);
-        fbo->BindDepthTexture(program);
+        if (DebugRenderUniform.EnableSSAO)
+        {
+            //TODO Deferred Shading Step 2 : Generate SSAO factor
+            program = shader->GetShaderProgram(ShaderStage::GenSSAO);
+            program->Bind();
+            m_frameBufferManager->Bind(FramebufferType::SSAO);
+            m_frameBufferManager->Clear(FramebufferType::SSAO);
+            fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
+            fbo->BindGBufferPositionNormal(program);
+            fbo->BindDepthTexture(program);
 
-        float screenWidth = static_cast<float>(Application::GetInstance().GetWindowWidth());
-        float screenHeight = static_cast<float>(Application::GetInstance().GetWindowHeight());
-        program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));
-        program->SetUniform("ControlVariable", SSAO.ControlVariable);
-        program->SetUniform("SamplePointNum", SSAO.SamplePointNum);
-        program->SetUniform("RangeOfInfluence", SSAO.RangeOfInfluence);
-        program->SetUniform("EnableSSAO", DebugRenderUniform.EnableSSAO);
+            screenWidth = static_cast<float>(Application::GetInstance().GetWindowWidth());
+            screenHeight = static_cast<float>(Application::GetInstance().GetWindowHeight());
+            program->SetUniform("ScreenDimension", Math::Vec2(screenWidth, screenHeight));
+            program->SetUniform("ControlVariable", SSAO.ControlVariable);
+            program->SetUniform("SamplePointNum", SSAO.SamplePointNum);
+            program->SetUniform("RangeOfInfluence", SSAO.RangeOfInfluence);
+            m_meshManager->GetMesh("FSQ")->Render();
 
-
-        m_meshManager->GetMesh("FSQ")->Render();
-
-
-        //TODO Deferred Shading Step 3 : Blur SSAO map Horinzontally
-        program = shader->GetShaderProgram(ShaderStage::SSAOBlurH);
-        program->Bind();
-
-        m_frameBufferManager->Bind(FramebufferType::SSAOBlurH);
-        m_frameBufferManager->Clear(FramebufferType::SSAOBlurH);
-        m_frameBufferManager->GetFramebuffer(FramebufferType::SSAO)->BindSSAOTexture(program, false);
-
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
-        fbo->BindGBufferNormal(program);
-        fbo->BindDepthTexture(program);
-
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::SSAO);
-        float fboWidth = static_cast<float>(fbo->GetWidth());
-        float fboHeight = static_cast<float>(fbo->GetHeight());
-        program->SetUniform("BlurWidth", SSAO.BlurWidth);
-        program->SetUniform("EdgeStrength", SSAO.EdgeStrength);
-        program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
-        program->SetUniform("HorizontalBlur", true);
-        program->SetUniform("EnableSSAO", DebugRenderUniform.EnableSSAO);
-        m_meshManager->GetMesh("FSQ")->Render();
-
-        //TODO Deferred Shading Step 4 : Blur SSAO map Vertically
-
-        m_frameBufferManager->Bind(FramebufferType::SSAOBlurV);
-        m_frameBufferManager->Clear(FramebufferType::SSAOBlurV);
-        m_frameBufferManager->GetFramebuffer(FramebufferType::SSAOBlurH)->BindSSAOTexture(program, true);
-        program->SetUniform("HorizontalBlur", false);
-        m_meshManager->GetMesh("FSQ")->Render();
-
-        //TODO Deferred Shading Step 5 : Generate Shadow Map
+        }
+        //TODO Deferred Shading Step 3 : Generate Shadow Map
         //glEnable(GL_CULL_FACE);
         //glCullFace(GL_FRONT);
         program = shader->GetShaderProgram(ShaderStage::DeferredLighting);
@@ -204,46 +176,46 @@ namespace Graphics
                 j->SetShaderParams(program, this);
             }
         }
-        DisableDepthTest();
-        //glDisable(GL_CULL_FACE);
 
-        //TODO Deferred Shading Step 6 : Blur ShadowMap Horinzontally
-        program = shader->GetShaderProgram(ShaderStage::ShadowBlurH);
+        //TODO Deferred Shading Step 4 : Blur ShadowMap + SSAO map Horinzontally
+        program = shader->GetShaderProgram(ShaderStage::Blur);
         program->Bind();
-        m_lightManager->SetShadowFilterUniforms(program);
-        m_frameBufferManager->Bind(FramebufferType::ShadowBlurH);
-        m_frameBufferManager->Clear(FramebufferType::ShadowBlurH);
+
+        m_frameBufferManager->Bind(FramebufferType::BlurH);
+        m_frameBufferManager->Clear(FramebufferType::BlurH);
+        m_frameBufferManager->GetFramebuffer(FramebufferType::SSAO)->BindSSAOTexture(program);
+
+        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredGBuffer);
+        fbo->BindGBufferNormal(program);
+        fbo->BindDepthTexture(program);
         m_frameBufferManager->GetFramebuffer(FramebufferType::DeferredShadowMap)->BindShadowMapTexture(program);
 
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurH);
+        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::SSAO);
         fboWidth = static_cast<float>(fbo->GetWidth());
         fboHeight = static_cast<float>(fbo->GetHeight());
+        program->SetUniform("BlurWidth", SSAO.BlurWidth);
+        program->SetUniform("EdgeStrength", SSAO.EdgeStrength);
         program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
-        m_meshManager->GetMesh("FSQ")->Render();
-
-
-        //TODO Deferred Shading Step 7 : Blur ShadowMap Vertically
-        program = shader->GetShaderProgram(ShaderStage::ShadowBlurV);
-        program->Bind();
+        program->SetUniform("HorizontalBlur", true);
         m_lightManager->SetShadowFilterUniforms(program);
-        m_frameBufferManager->Bind(FramebufferType::ShadowBlurV);
-        m_frameBufferManager->Clear(FramebufferType::ShadowBlurV);
-        m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurH)->BindShadowMapTexture(program);
-
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurV);
-        fboWidth = static_cast<float>(fbo->GetWidth());
-        fboHeight = static_cast<float>(fbo->GetHeight());
-        program->SetUniform("ScreenDimension", Math::Vec2(fboWidth, fboHeight));
         m_meshManager->GetMesh("FSQ")->Render();
-        
 
-        //TODO Deferred Shading Step 8 : Combine everything
-        m_frameBufferManager->Bind(FramebufferType::Screen);
+        //TODO Deferred Shading Step 4.5 : Blur ShadowMap + SSAO map Vertically
+        m_frameBufferManager->Bind(FramebufferType::BlurV);
+        m_frameBufferManager->Clear(FramebufferType::BlurV);
+        m_frameBufferManager->GetFramebuffer(FramebufferType::BlurH)->BindSSAOTexture(program);
+        m_frameBufferManager->GetFramebuffer(FramebufferType::BlurH)->BindShadowMapTexture(program);
+        program->SetUniform("HorizontalBlur", false);
+        m_meshManager->GetMesh("FSQ")->Render();
+    
+        //TODO Deferred Shading Step 5 : Combine everything
         program = shader->GetShaderProgram(ShaderStage::RenderFullScreenQuad);
         program->Bind();
 
+        m_frameBufferManager->Bind(FramebufferType::Screen);
         //shadow map
-        m_frameBufferManager->GetFramebuffer(FramebufferType::ShadowBlurV)->BindShadowMapTexture(program);
+        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::BlurV);
+        fbo->BindShadowMapTexture(program);
         program->SetUniform("LightViewProj", m_lightManager->GetLightViewProj());
 
         //light
@@ -255,8 +227,8 @@ namespace Graphics
         fbo->BindDepthTexture(program);
 
         //ssao
-        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::SSAOBlurV);
-        fbo->BindSSAOTexture(program, true);
+        fbo = m_frameBufferManager->GetFramebuffer(FramebufferType::BlurV);
+        fbo->BindSSAOTexture(program);
 
         program->SetUniform("DebugOutputIndex", DebugRenderUniform.OutputIndex);
         program->SetUniform("EnableBlur", DebugRenderUniform.EnableBlur);

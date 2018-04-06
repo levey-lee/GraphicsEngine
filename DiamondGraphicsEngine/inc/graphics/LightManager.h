@@ -113,6 +113,7 @@ namespace Graphics
         Math::Vec3 GetShadowingLightPos();
     private:
         static std::list<LightAttribute> m_lightAttribtues;
+        float GaussianWeights[101/*MUST MATCH with shader width*2+1 */] = { 0 };
     };
 
 }

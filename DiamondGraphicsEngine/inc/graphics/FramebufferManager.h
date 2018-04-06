@@ -21,8 +21,8 @@ namespace Graphics
         DeferredShadowMap,
         ShadowBlurH,
         ShadowBlurV,
-        SSAOBlurH,
-        SSAOBlurV,
+        BlurH,
+        BlurV,
         // TODO(student): For Deferred Shader(Assignment 3), add more types here, such as POSITIVE_Z or NEGATIVE_X
 
         COUNT,

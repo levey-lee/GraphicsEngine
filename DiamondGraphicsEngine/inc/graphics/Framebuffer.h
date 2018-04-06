@@ -31,9 +31,16 @@ namespace Graphics
         //but not to attach it in the first pass
         DepthTexture = Count,
         ShadowMap,
-        FloatBuffer,
         SSAO
     };
+
+    enum FBO_USAGE
+    {
+        FBO_USAGE_REGULAR,
+        FBO_USAGE_FLOAT_BUFFER,
+        FBO_USAGE_DEPTH_BUFFER,        
+    };
+
 
     class Framebuffer
     {
@@ -50,8 +57,8 @@ namespace Graphics
         Color const& GetClearColor() const { return m_clearColor; }
 
         void Resize(u32 width, u32 height, bool depthOnly);
-        void Build(bool depthOnly = false);
-        void BuildSsaoBuffer();
+        void Build(FBO_USAGE usage);
+        //void BuildSsaoBuffer();
         void Bind(); // bind for rendering
         void Clear();
         /*******************************************************
@@ -68,10 +75,9 @@ namespace Graphics
         Framebuffer* BindGBufferNormal(const std::shared_ptr<ShaderProgram>& shaderProgram);
         Framebuffer* BindDepthTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
         Framebuffer* BindShadowMapTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
-        Framebuffer* BindSSAOTexture(const std::shared_ptr<ShaderProgram>& shaderProgram, bool useFloatBuffer);
+        Framebuffer* BindSSAOTexture(const std::shared_ptr<ShaderProgram>& shaderProgram);
 
     private:
-        void genDepthTexture(bool asShadowMap);
 
         u32 m_width, m_height;
         GLuint m_fbo = 0;
@@ -80,9 +86,7 @@ namespace Graphics
         Color m_clearColor = Color::Cyan;
         std::shared_ptr<Texture> m_colorTexture[static_cast<int>(GBufferAttachmentType::Count)];
 
-        std::shared_ptr<Texture> m_ssaoTexture;
-        bool m_usedForSSAO = false;
-
+        FBO_USAGE m_usage = FBO_USAGE_REGULAR;
     };
 }
 

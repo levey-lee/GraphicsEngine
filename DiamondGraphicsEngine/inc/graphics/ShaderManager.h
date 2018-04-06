@@ -12,12 +12,10 @@ namespace Graphics
         ForwardRendering = 0,
 
         DiffuseMaterial = 0,
-        SSAO = 1,
-        SSAOBlurH = 2,
-        DeferredLighting = 3,
-        ShadowBlurH = 4,
-        ShadowBlurV = 5,
-        RenderFullScreenQuad = 6,
+        GenSSAO = 1,
+        DeferredLighting = 2,
+        Blur = 3,
+        RenderFullScreenQuad = 4,
 
         Count
     };
