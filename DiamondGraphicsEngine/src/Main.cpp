@@ -67,10 +67,14 @@ void Initialize(Application* app, void* /*userdata*/)
 
     std::shared_ptr<FramebufferManager> fboManager = g_Graphics->GetFrameBufferManager();
     fboManager->RegisterFramebuffer(FramebufferType::DeferredGBuffer, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_REGULAR);
+
+    fboManager->RegisterFramebuffer(FramebufferType::GenShadowMap,512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurH, 512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::ShadowBlurV, 512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);
+
     fboManager->RegisterFramebuffer(FramebufferType::SSAO, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
-    fboManager->RegisterFramebuffer(FramebufferType::DeferredShadowMap,512, 512)->Build(FBO_USAGE_FLOAT_BUFFER);;
-    fboManager->RegisterFramebuffer(FramebufferType::BlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_FLOAT_BUFFER);
-    fboManager->RegisterFramebuffer(FramebufferType::BlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_FLOAT_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurH, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
+    fboManager->RegisterFramebuffer(FramebufferType::SSAOBlurV, app->GetWindowWidth(), app->GetWindowHeight())->Build(FBO_USAGE_DEPTH_BUFFER);
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -134,6 +138,7 @@ void Initialize(Application* app, void* /*userdata*/)
         { "GenAOFactor.vert", "GenAOFactor.frag", ShaderUsage::RegularVSPS },
         { "GenShadowMap.vert", "GenShadowMap.frag" , ShaderUsage::LightShadowMap },
         { "BlurSSAO.vert", "BlurSSAO.frag" , ShaderUsage::RegularVSPS },
+        { "BlurShadowMap.vert", "BlurShadowMap.frag" , ShaderUsage::RegularVSPS },
         { "FinalPass.vert", "FinalPass.frag", ShaderUsage::RegularVSPS }
     });
 #else
@@ -324,9 +329,9 @@ void OnViewportChanged(Application* application)
     
     fboManager->GetFramebuffer(FramebufferType::SSAO)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(), false);
-    fboManager->GetFramebuffer(FramebufferType::BlurH)->Resize(
+    fboManager->GetFramebuffer(FramebufferType::SSAOBlurH)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(), true);
-    fboManager->GetFramebuffer(FramebufferType::BlurV)->Resize(
+    fboManager->GetFramebuffer(FramebufferType::SSAOBlurV)->Resize(
         application->GetWindowWidth(), application->GetWindowHeight(), true);
 
 }

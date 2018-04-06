@@ -18,11 +18,11 @@ namespace Graphics
         Screen = 0,
         DeferredGBuffer,
         SSAO,
-        DeferredShadowMap,
+        GenShadowMap,
         ShadowBlurH,
         ShadowBlurV,
-        BlurH,
-        BlurV,
+        SSAOBlurH,
+        SSAOBlurV,
         // TODO(student): For Deferred Shader(Assignment 3), add more types here, such as POSITIVE_Z or NEGATIVE_X
 
         COUNT,

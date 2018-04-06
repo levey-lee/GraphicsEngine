@@ -3,18 +3,11 @@
 #define MAX_WIDTH 50
 #define PI 3.1415926535897932384626433832795
 
-
-// Ouput data
-layout(location = 0) out float FilteredShadowPixel;
-
 uniform vec2 ScreenDimension;
 uniform int BlurWidth;
-uniform int ShadowFilterWidth;
-uniform float GaussianWeights[MAX_WIDTH*2+1];
 uniform float EdgeStrength;
 uniform sampler2D WorldNormal_ReceiveLight_Texture;
 uniform sampler2D Depth_Texture;
-uniform sampler2D ShadowMaps_Texture;
 uniform sampler2D SSAO_Texture;
 uniform bool HorizontalBlur;
 
@@ -130,41 +123,6 @@ float GenSSAOFactor(in vec3 pixelNormal, in float pixelDepth,
   return clamp(sum,0,1);
 }
 
-float FilterShadowMap(in vec2 pixelFrac, in vec2 uvPos)
-{
-  float DepthStrip[MAX_WIDTH*2+1];
-  //texture(ShadowMaps_Texture, uvPos).r;
-  const int width = ShadowFilterWidth;
-  const int width2 = 2*width;
-  const int width2p1 = 2*width+1;
-  float sum = 0;  
-  DepthStrip[width] = texture(ShadowMaps_Texture, uvPos).r;
-  
-  if (HorizontalBlur){
-      for (int i = 0; i < width; ++i){
-      float depthLeft  = texture(ShadowMaps_Texture, uvPos-vec2((width-i)*pixelFrac.x,0)).r;
-      float depthRight = texture(ShadowMaps_Texture, uvPos+vec2((width-i)*pixelFrac.x,0)).r;
-      DepthStrip[i] = depthLeft;
-      DepthStrip[width2-i] = depthRight;
-    }
-  }
-  else {    
-    for (int i = 0; i < width; ++i){
-      float depthTop  = texture(ShadowMaps_Texture, uvPos-vec2(0,(width-i)*pixelFrac.y)).r;
-      float depthDown = texture(ShadowMaps_Texture, uvPos+vec2(0,(width-i)*pixelFrac.y)).r;
-      DepthStrip[i] = depthTop;
-      DepthStrip[width2-i] = depthDown;
-    }
-  }
-  for (int i=0; i < width2p1; ++i)
-  {
-    sum += DepthStrip [i] * GaussianWeights[i];
-  }
-  return sum;
-}
-
-
-
 void main()
 {
   vec2 pixelFrac = vec2(1.0f/ScreenDimension.x,1.0f/ScreenDimension.y );
@@ -173,8 +131,7 @@ void main()
   vec3 pixelNormal = texture(WorldNormal_ReceiveLight_Texture, uvPos).xyz*2-1;
   float pixelDepth = texture(Depth_Texture, uvPos).r;
   
-  gl_FragDepth = GenSSAOFactor(pixelNormal, pixelDepth, uvPos, pixelFrac); 
-  FilteredShadowPixel = FilterShadowMap(pixelFrac, uvPos);
+  gl_FragDepth = GenSSAOFactor(pixelNormal, pixelDepth, uvPos, pixelFrac); ;
 }
 
 

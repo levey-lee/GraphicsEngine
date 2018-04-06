@@ -4,8 +4,9 @@
 
 layout(location = 0) out float FilteredDepth;
 
-uniform vec2 ScreenDimension;
 uniform sampler2D ShadowMaps_Texture;
+
+uniform vec2 ScreenDimension;
 uniform int ShadowFilterWidth;
 uniform float GaussianWeights[MAX_WIDTH*2+1];
 uniform bool HorizontalBlur;

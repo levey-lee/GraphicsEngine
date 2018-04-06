@@ -14,8 +14,9 @@ namespace Graphics
         DiffuseMaterial = 0,
         GenSSAO = 1,
         DeferredLighting = 2,
-        Blur = 3,
-        RenderFullScreenQuad = 4,
+        BlurSSAO = 3,
+        BlurShadowMap = 4,
+        RenderFullScreenQuad = 5,
 
         Count
     };
