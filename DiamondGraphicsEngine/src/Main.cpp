@@ -180,7 +180,7 @@ void Initialize(Application* app, void* /*userdata*/)
 
         Object& spongeObj = g_MainScene.CreateObject(usingShader);
         spongeObj.AddComponent<Renderer>(materialManager->GetMaterial("Sponge"), spongeMesh).SetEnabled(false);
-        spongeObj.GetComponentRef<Component::Transform>().SetPosition({ 2, 2, -2 }).SetScale(10).SetRotation({ 0, 0,0 });
+        spongeObj.GetComponentRef<Component::Transform>().SetPosition({ 2, 2.2f, -2 }).SetScale(10).SetRotation({ 0, 0,0 });
         spongeObj.SetName("Menger Sponge");
 
         Object& reversedSphere = g_MainScene.CreateObject(usingShader);
